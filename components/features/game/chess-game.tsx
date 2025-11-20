@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { RotateCcw, ChevronLeft, ChevronRight, Flag, Play } from "lucide-react"
 import { getBestMove, type Difficulty } from "@/lib/chess/engine"
 import { saveGame } from "@/lib/actions/games"
+import { analyzeGame } from "@/lib/actions/analysis"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 type GameState = "setup" | "playing" | "finished"
@@ -38,6 +40,10 @@ export function ChessGame() {
   const [winner, setWinner] = useState<"w" | "b" | "draw" | null>(null)
   const [gameOverReason, setGameOverReason] = useState<string>("")
   const [gameSaved, setGameSaved] = useState(false)
+  const [savedGameId, setSavedGameId] = useState<string | null>(null)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+
+  const router = useRouter()
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -148,8 +154,9 @@ export function ChessGame() {
 
           if (response.error) {
             toast.error(response.error)
-          } else if (response.success) {
+          } else if (response.success && response.game) {
             setGameSaved(true)
+            setSavedGameId(response.game.id)
             const ratingChange = response.ratingChange || 0
             if (ratingChange > 0) {
               toast.success(`Game saved! Rating +${ratingChange}`)
@@ -227,7 +234,30 @@ export function ChessGame() {
     setWinner(null)
     setGameOverReason("")
     setGameSaved(false)
+    setSavedGameId(null)
+    setIsAnalyzing(false)
     setGameState("setup")
+  }
+
+  const handleAnalyzeGame = async () => {
+    if (!savedGameId) return
+
+    setIsAnalyzing(true)
+    try {
+      const result = await analyzeGame(savedGameId)
+
+      if (result.error) {
+        toast.error(result.error)
+      } else {
+        toast.success("Game analyzed successfully!")
+        router.push(`/analysis/${savedGameId}`)
+      }
+    } catch (error) {
+      console.error("Error analyzing game:", error)
+      toast.error("Failed to analyze game")
+    } finally {
+      setIsAnalyzing(false)
+    }
   }
 
   const handleResign = () => {
@@ -369,7 +399,14 @@ export function ChessGame() {
                   {winner === "draw" ? "Draw" : winner === playerColor ? "You Won!" : "You Lost"}
                 </h2>
                 <p className="text-muted-foreground mb-4">{gameOverReason}</p>
-                <Button onClick={resetGame}>Play Again</Button>
+                <div className="flex gap-2 justify-center">
+                  <Button onClick={handleAnalyzeGame} disabled={isAnalyzing || !savedGameId}>
+                    {isAnalyzing ? "Analyzing..." : "Analyze Game"}
+                  </Button>
+                  <Button onClick={resetGame} variant="outline">
+                    Play Again
+                  </Button>
+                </div>
               </Card>
             </div>
           )}

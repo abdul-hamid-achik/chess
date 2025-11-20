@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { GameAnalysisCard } from "./game-analysis-card"
 import { Card, CardContent } from "@/components/ui/card"
 import { Loader2, Brain } from "lucide-react"
@@ -19,6 +20,7 @@ export function GameListForAnalysis({
   loading,
   onGameAnalyzed,
 }: GameListForAnalysisProps) {
+  const router = useRouter()
   const [analyzingGameId, setAnalyzingGameId] = useState<string | null>(null)
 
   const handleAnalyze = async (gameId: string) => {
@@ -28,13 +30,13 @@ export function GameListForAnalysis({
 
       if (result.error) {
         toast.error(result.error)
+        setAnalyzingGameId(null)
       } else {
         toast.success("Game analyzed successfully!")
-        onGameAnalyzed?.()
+        router.push(`/analysis/${gameId}`)
       }
     } catch {
       toast.error("Failed to analyze game")
-    } finally {
       setAnalyzingGameId(null)
     }
   }
