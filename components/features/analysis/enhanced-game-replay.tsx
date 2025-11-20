@@ -1,0 +1,229 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Chess } from "chess.js"
+import { Chessboard } from "react-chessboard"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
+import { formatMoveNumber, getClassificationVariant } from "@/lib/analysis-helpers"
+import { MOVE_LABELS } from "@/types/analysis"
+import type { MoveAnalysisData } from "@/types/analysis"
+
+interface EnhancedGameReplayProps {
+  moves: string[]
+  moveAnalyses: MoveAnalysisData[]
+  playerColor: "w" | "b"
+  onMoveChange?: (_index: number) => void
+  controlledMoveIndex?: number
+}
+
+export function EnhancedGameReplay({
+  moves,
+  moveAnalyses,
+  playerColor,
+  onMoveChange,
+  controlledMoveIndex,
+}: EnhancedGameReplayProps) {
+  const [game, setGame] = useState(new Chess())
+  const [internalMoveIndex, setInternalMoveIndex] = useState(-1)
+  const [fen, setFen] = useState(game.fen())
+
+  // Use controlled index if provided, otherwise use internal
+  const currentMoveIndex =
+    controlledMoveIndex !== undefined ? controlledMoveIndex : internalMoveIndex
+
+  useEffect(() => {
+    const newGame = new Chess()
+    setGame(newGame)
+    setFen(newGame.fen())
+    if (controlledMoveIndex === undefined) {
+      setInternalMoveIndex(-1)
+    }
+  }, [moves, controlledMoveIndex])
+
+  const goToMove = (moveIndex: number) => {
+    const newGame = new Chess()
+
+    for (let i = 0; i <= moveIndex; i++) {
+      if (i < moves.length) {
+        try {
+          newGame.move(moves[i])
+        } catch (e) {
+          console.error("Error applying move:", moves[i], e)
+          break
+        }
+      }
+    }
+
+    setGame(newGame)
+    setFen(newGame.fen())
+
+    if (controlledMoveIndex === undefined) {
+      setInternalMoveIndex(moveIndex)
+    }
+    onMoveChange?.(moveIndex)
+  }
+
+  const goToStart = () => goToMove(-1)
+  const goToPrevious = () => {
+    if (currentMoveIndex > -1) {
+      goToMove(currentMoveIndex - 1)
+    }
+  }
+  const goToNext = () => {
+    if (currentMoveIndex < moves.length - 1) {
+      goToMove(currentMoveIndex + 1)
+    }
+  }
+  const goToEnd = () => goToMove(moves.length - 1)
+
+  // Get current move analysis
+  const getCurrentAnalysis = () => {
+    if (currentMoveIndex === -1 || currentMoveIndex >= moveAnalyses.length) {
+      return null
+    }
+    return moveAnalyses[currentMoveIndex]
+  }
+
+  const currentAnalysis = getCurrentAnalysis()
+
+  // Get evaluation display
+  const getEvaluationDisplay = (evaluation: number) => {
+    const pawns = evaluation / 100
+    const sign = pawns > 0 ? "+" : ""
+    return `${sign}${pawns.toFixed(2)}`
+  }
+
+  const getEvaluationColor = (evaluation: number) => {
+    if (evaluation > 200) return "bg-green-500"
+    if (evaluation > 50) return "bg-blue-500"
+    if (evaluation > -50) return "bg-gray-500"
+    if (evaluation > -200) return "bg-orange-500"
+    return "bg-red-500"
+  }
+
+  return (
+    <Card>
+      <CardContent className="p-4 space-y-4">
+        {/* Chessboard with evaluation bar */}
+        <div className="relative">
+          <div className="max-w-[600px] mx-auto">
+            <Chessboard
+              position={fen}
+              boardOrientation={playerColor === "w" ? "white" : "black"}
+              arePiecesDraggable={false}
+            />
+          </div>
+
+          {/* Evaluation bar */}
+          {currentAnalysis && currentAnalysis.evaluationAfter !== undefined && (
+            <div className="absolute top-0 right-0 w-8 h-full bg-muted rounded-r-lg overflow-hidden">
+              <div
+                className={`w-full transition-all ${getEvaluationColor(
+                  currentAnalysis.evaluationAfter
+                )}`}
+                style={{
+                  height: `${Math.min(
+                    100,
+                    Math.max(0, 50 - (currentAnalysis.evaluationAfter / 100) * 5)
+                  )}%`,
+                }}
+              />
+              <div className="absolute top-1/2 left-0 right-0 h-px bg-border" />
+            </div>
+          )}
+        </div>
+
+        {/* Current move info */}
+        {currentAnalysis && (
+          <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-sm text-muted-foreground">
+                {formatMoveNumber(currentMoveIndex)}
+              </span>
+              <span className="font-semibold text-lg">{currentAnalysis.move}</span>
+              <Badge variant={getClassificationVariant(currentAnalysis.classification)}>
+                {MOVE_LABELS[currentAnalysis.classification]}
+              </Badge>
+            </div>
+            {currentAnalysis.evaluationAfter !== undefined && (
+              <div className="text-right">
+                <div className="text-xs text-muted-foreground">Evaluation</div>
+                <div className="font-mono font-semibold">
+                  {getEvaluationDisplay(currentAnalysis.evaluationAfter)}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Best move suggestion */}
+        {currentAnalysis &&
+          currentAnalysis.bestMove &&
+          (currentAnalysis.classification === "mistake" ||
+            currentAnalysis.classification === "blunder" ||
+            currentAnalysis.classification === "inaccuracy") && (
+            <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-lg">
+              <div className="text-sm font-medium text-red-900 dark:text-red-100 mb-1">
+                Better Move Available
+              </div>
+              <div className="text-sm">
+                <span className="text-muted-foreground">Best: </span>
+                <span className="font-semibold">{currentAnalysis.bestMove}</span>
+                {currentAnalysis.delta && (
+                  <span className="ml-2 text-red-500 font-mono">
+                    ({(currentAnalysis.delta / 100).toFixed(2)})
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+        {/* Navigation controls */}
+        <div className="flex justify-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={goToStart}
+            disabled={currentMoveIndex === -1}
+          >
+            <ChevronsLeft className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={goToPrevious}
+            disabled={currentMoveIndex === -1}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <div className="px-4 py-2 bg-muted rounded flex items-center min-w-[120px] justify-center">
+            <span className="text-sm">
+              {currentMoveIndex === -1
+                ? "Start"
+                : `Move ${currentMoveIndex + 1} / ${moves.length}`}
+            </span>
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={goToNext}
+            disabled={currentMoveIndex === moves.length - 1}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={goToEnd}
+            disabled={currentMoveIndex === moves.length - 1}
+          >
+            <ChevronsRight className="w-4 h-4" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
