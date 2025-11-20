@@ -1,0 +1,12 @@
+services:
+  db:
+    image: neondatabase/neon_local:latest
+    container_name: chess-neon-local
+    ports:
+      - '5432:5432'
+    env_file:
+      - .env.local
+    environment:
+      DRIVER: serverless
+    profiles:
+      - dev
