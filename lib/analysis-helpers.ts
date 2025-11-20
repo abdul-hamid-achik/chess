@@ -75,26 +75,17 @@ export function generatePositionsFromPGN(pgn: string): {
   try {
     const game = new Chess()
 
-    // Load the PGN
-    const loaded = game.loadPgn(pgn)
-    if (!loaded) {
-      return {
-        success: false,
-        error: "Invalid PGN format",
-      }
-    }
+    // Load and validate PGN (throws error if invalid in chess.js v1.0.0+)
+    game.loadPgn(pgn)
 
-    // Reset to start and generate positions
+    // Get move history from loaded game
+    const history = game.history()
+
+    // Reset to starting position and replay each move to capture positions
     game.reset()
     const positions: string[] = [game.fen()] // Starting position
     const moves: string[] = []
 
-    // Load PGN again and step through moves
-    game.loadPgn(pgn)
-    const history = game.history()
-
-    // Reset and replay each move to get positions
-    game.reset()
     for (const move of history) {
       game.move(move)
       positions.push(game.fen())
