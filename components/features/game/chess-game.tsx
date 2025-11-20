@@ -16,7 +16,7 @@ type PlayerColor = "w" | "b"
 
 const TIME_CONTROLS: Record<TimeControl, { label: string; time: number }> = {
   bullet: { label: "Bullet (1 min)", time: 60 },
-  blitz: { label: "Blitz (3 min)", time: 180 },
+  blitz: { label: "Blitz (5 min)", time: 300 },
   rapid: { label: "Rapid (10 min)", time: 600 },
   classical: { label: "Classical (30 min)", time: 1800 },
 }
@@ -30,7 +30,7 @@ export function ChessGame() {
   const [gameState, setGameState] = useState<GameState>("setup")
 
   const [playerColor, setPlayerColor] = useState<PlayerColor>("w")
-  const [selectedSide, setSelectedSide] = useState<PlayerColor | "random">("w")
+  const [selectedSide, setSelectedSide] = useState<PlayerColor | "random">("random")
 
   const [timeControl, setTimeControl] = useState<TimeControl>("rapid")
   const [whiteTime, setWhiteTime] = useState(600)
