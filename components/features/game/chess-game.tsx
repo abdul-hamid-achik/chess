@@ -366,7 +366,7 @@ export function ChessGame() {
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
               <Card className="p-6 text-center animate-in fade-in zoom-in duration-300">
                 <h2 className="text-2xl font-bold mb-2">
-                  {winner === "w" ? "You Won!" : winner === "b" ? "You Lost" : "Draw"}
+                  {winner === "draw" ? "Draw" : winner === playerColor ? "You Won!" : "You Lost"}
                 </h2>
                 <p className="text-muted-foreground mb-4">{gameOverReason}</p>
                 <Button onClick={resetGame}>Play Again</Button>
