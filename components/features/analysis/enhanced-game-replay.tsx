@@ -111,9 +111,11 @@ export function EnhancedGameReplay({
         <div className="relative">
           <div className="max-w-[600px] mx-auto">
             <Chessboard
-              position={fen}
-              boardOrientation={playerColor === "w" ? "white" : "black"}
-              arePiecesDraggable={false}
+              options={{
+                position: fen,
+                boardOrientation: playerColor === "w" ? "white" : "black",
+                allowDragging: false,
+              }}
             />
           </div>
 

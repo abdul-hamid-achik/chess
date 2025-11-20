@@ -17,7 +17,7 @@ export async function Sidebar({ className }: SidebarProps) {
             <div className="w-8 h-8 bg-primary text-primary-foreground flex items-center justify-center rounded">
               ♟
             </div>
-            <h2 className="text-xl font-bold tracking-tight">ChessClone</h2>
+            <h2 className="text-xl font-bold tracking-tight">Chess</h2>
           </div>
           <div className="space-y-1">
             <Link href="/play">

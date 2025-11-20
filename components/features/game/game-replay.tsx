@@ -13,7 +13,7 @@ interface GameReplayProps {
   playerColor: "w" | "b"
 }
 
-export function GameReplay({ moves, initialFen, playerColor }: GameReplayProps) {
+export function GameReplay({ moves, initialFen: _initialFen, playerColor }: GameReplayProps) {
   const [game, setGame] = useState(new Chess())
   const [currentMoveIndex, setCurrentMoveIndex] = useState(-1)
   const [fen, setFen] = useState(game.fen())
@@ -62,9 +62,11 @@ export function GameReplay({ moves, initialFen, playerColor }: GameReplayProps) 
       <Card className="max-w-[600px] mx-auto">
         <CardContent className="p-4">
           <Chessboard
-            position={fen}
-            boardOrientation={playerColor === "w" ? "white" : "black"}
-            arePiecesDraggable={false}
+            options={{
+              position: fen,
+              boardOrientation: playerColor === "w" ? "white" : "black",
+              allowDragging: false,
+            }}
           />
         </CardContent>
       </Card>

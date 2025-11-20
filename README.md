@@ -1,4 +1,4 @@
-# ChessClone - Personal Chess Application
+# Chess - Personal Chess Application
 
 A modern, full-stack chess application built with Next.js 16, featuring authentication, game persistence, puzzles, and learning tools.
 

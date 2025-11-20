@@ -9,9 +9,9 @@ import { Toaster } from "@/components/ui/sonner"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "ChessClone",
-  description: "A simple but functional chess clone",
-    generator: 'v0.app'
+  title: "Chess",
+  description: "A simple but functional chess application",
+  generator: 'v0.app'
 }
 
 export default function RootLayout({

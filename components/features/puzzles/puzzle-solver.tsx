@@ -26,9 +26,6 @@ export function PuzzleSolver({ puzzle, onPuzzleComplete }: PuzzleSolverProps) {
   const [attempts, setAttempts] = useState(0)
   const [hintUsed, setHintUsed] = useState(false)
 
-  // Determine whose turn it is based on the FEN
-  const isPlayerTurn = game.turn() === "w" ? true : false
-
   useEffect(() => {
     // Reset when puzzle changes
     setGame(new Chess(puzzle.fen))
@@ -40,9 +37,10 @@ export function PuzzleSolver({ puzzle, onPuzzleComplete }: PuzzleSolverProps) {
     setHintUsed(false)
   }, [puzzle])
 
-  const handleMove = (sourceSquare: string, targetSquare: string, piece: string) => {
+  const handleMove = ({ sourceSquare, targetSquare }: { piece?: unknown; sourceSquare: string; targetSquare: string | null }) => {
     // Only allow moves during playing state
     if (puzzleState !== "playing") return false
+    if (!targetSquare) return false
 
     const gameCopy = new Chess(game.fen())
 
@@ -74,7 +72,7 @@ export function PuzzleSolver({ puzzle, onPuzzleComplete }: PuzzleSolverProps) {
           // Make opponent's response if there is one
           if (currentMoveIndex + 1 < solutionMoves.length) {
             setTimeout(() => {
-              makeOpponentMove(gameCopy, newUserMoves)
+              makeOpponentMove(gameCopy)
             }, 500)
           }
         }
@@ -85,12 +83,12 @@ export function PuzzleSolver({ puzzle, onPuzzleComplete }: PuzzleSolverProps) {
         handlePuzzleComplete(false, [...userMoves, move.san])
         return false
       }
-    } catch (e) {
+    } catch {
       return false
     }
   }
 
-  const makeOpponentMove = (currentGame: Chess, currentUserMoves: string[]) => {
+  const makeOpponentMove = (currentGame: Chess) => {
     const opponentMove = solutionMoves[currentMoveIndex + 1]
 
     try {
@@ -191,13 +189,15 @@ export function PuzzleSolver({ puzzle, onPuzzleComplete }: PuzzleSolverProps) {
         <CardContent>
           <div className="max-w-[600px] mx-auto">
             <Chessboard
-              position={fen}
-              onPieceDrop={handleMove}
-              boardOrientation={game.turn() === "w" ? "white" : "black"}
-              arePiecesDraggable={puzzleState === "playing"}
-              customBoardStyle={{
-                borderRadius: "4px",
-                boxShadow: "0 2px 10px rgba(0, 0, 0, 0.2)",
+              options={{
+                position: fen,
+                onPieceDrop: handleMove,
+                boardOrientation: game.turn() === "w" ? "white" : "black",
+                allowDragging: puzzleState === "playing",
+                boardStyle: {
+                  borderRadius: "4px",
+                  boxShadow: "0 2px 10px rgba(0, 0, 0, 0.2)",
+                },
               }}
             />
           </div>

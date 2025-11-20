@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Chess } from "chess.js"
 import { ChessBoard } from "./chess-board"
 import { Card } from "@/components/ui/card"
@@ -22,8 +22,8 @@ const TIME_CONTROLS: Record<TimeControl, { label: string; time: number }> = {
 }
 
 export function ChessGame() {
-  const [game, setGame] = useState(new Chess())
-  const [fen, setFen] = useState(game.fen())
+  const gameRef = useRef(new Chess())
+  const [fen, setFen] = useState(gameRef.current.fen())
   const [moveHistory, setMoveHistory] = useState<string[]>([])
   const [captured, setCaptured] = useState<{ w: string[]; b: string[] }>({ w: [], b: [] })
   const [difficulty, setDifficulty] = useState<Difficulty>("Basic")
@@ -66,7 +66,7 @@ export function ChessGame() {
     if (gameState !== "playing") return
 
     const timer = setInterval(() => {
-      if (game.turn() === "w") {
+      if (gameRef.current.turn() === "w") {
         setWhiteTime((prev) => {
           if (prev <= 0) {
             setGameState("finished")
@@ -90,10 +90,11 @@ export function ChessGame() {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [gameState, game])
+  }, [gameState])
 
   // Check game over conditions
   useEffect(() => {
+    const game = gameRef.current
     if (game.isGameOver()) {
       setGameState("finished")
       if (game.isCheckmate()) {
@@ -113,13 +114,14 @@ export function ChessGame() {
         setGameOverReason("Insufficient Material")
       }
     }
-  }, [fen, game])
+  }, [fen])
 
   // Save game when finished
   useEffect(() => {
     if (gameState === "finished" && winner !== null && !gameSaved) {
       const saveGameData = async () => {
         try {
+          const game = gameRef.current
           // Determine result from player's perspective
           let result: "win" | "loss" | "draw"
           if (winner === "draw") {
@@ -165,15 +167,20 @@ export function ChessGame() {
 
       saveGameData()
     }
-  }, [gameState, winner, gameSaved, game, playerColor, difficulty, timeControl, gameOverReason, whiteTime, blackTime, moveHistory])
+  }, [gameState, winner, gameSaved, playerColor, difficulty, timeControl, gameOverReason, whiteTime, blackTime, moveHistory])
 
   // Make a move
   const makeMove = useCallback(
     (move: { from: string; to: string; promotion?: string }) => {
-      if (game.turn() !== playerColor) return false
+      const game = gameRef.current
+
+      if (game.turn() !== playerColor) {
+        return false
+      }
 
       try {
         const result = game.move(move)
+
         if (result) {
           setFen(game.fen())
           setMoveHistory(game.history())
@@ -187,16 +194,17 @@ export function ChessGame() {
           }
           return true
         }
-      } catch (e) {
+      } catch {
         return false
       }
       return false
     },
-    [game, playerColor],
+    [playerColor],
   )
 
   // Bot move
   useEffect(() => {
+    const game = gameRef.current
     if (gameState === "playing" && game.turn() !== playerColor && !game.isGameOver()) {
       const timeout = setTimeout(() => {
         const bestMove = getBestMove(game, difficulty)
@@ -208,11 +216,11 @@ export function ChessGame() {
       }, 500)
       return () => clearTimeout(timeout)
     }
-  }, [fen, game, difficulty, gameState, playerColor])
+  }, [fen, difficulty, gameState, playerColor])
 
   const resetGame = () => {
     const newGame = new Chess()
-    setGame(newGame)
+    gameRef.current = newGame
     setFen(newGame.fen())
     setMoveHistory([])
     setCaptured({ w: [], b: [] })
@@ -251,11 +259,10 @@ export function ChessGame() {
                   <button
                     key={level}
                     onClick={() => setDifficulty(level)}
-                    className={`p-3 rounded-lg border-2 transition-all text-center ${
-                      difficulty === level
-                        ? "border-primary bg-primary/10 font-bold"
-                        : "border-border hover:border-primary/50"
-                    }`}
+                    className={`p-3 rounded-lg border-2 transition-all text-center ${difficulty === level
+                      ? "border-primary bg-primary/10 font-bold"
+                      : "border-border hover:border-primary/50"
+                      }`}
                   >
                     {level}
                   </button>
@@ -268,31 +275,28 @@ export function ChessGame() {
               <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => setSelectedSide("w")}
-                  className={`p-3 rounded-lg border-2 transition-all text-center ${
-                    selectedSide === "w"
-                      ? "border-primary bg-primary/10 font-bold"
-                      : "border-border hover:border-primary/50"
-                  }`}
+                  className={`p-3 rounded-lg border-2 transition-all text-center ${selectedSide === "w"
+                    ? "border-primary bg-primary/10 font-bold"
+                    : "border-border hover:border-primary/50"
+                    }`}
                 >
                   White
                 </button>
                 <button
                   onClick={() => setSelectedSide("random")}
-                  className={`p-3 rounded-lg border-2 transition-all text-center ${
-                    selectedSide === "random"
-                      ? "border-primary bg-primary/10 font-bold"
-                      : "border-border hover:border-primary/50"
-                  }`}
+                  className={`p-3 rounded-lg border-2 transition-all text-center ${selectedSide === "random"
+                    ? "border-primary bg-primary/10 font-bold"
+                    : "border-border hover:border-primary/50"
+                    }`}
                 >
                   Random
                 </button>
                 <button
                   onClick={() => setSelectedSide("b")}
-                  className={`p-3 rounded-lg border-2 transition-all text-center ${
-                    selectedSide === "b"
-                      ? "border-primary bg-primary/10 font-bold"
-                      : "border-border hover:border-primary/50"
-                  }`}
+                  className={`p-3 rounded-lg border-2 transition-all text-center ${selectedSide === "b"
+                    ? "border-primary bg-primary/10 font-bold"
+                    : "border-border hover:border-primary/50"
+                    }`}
                 >
                   Black
                 </button>
@@ -306,11 +310,10 @@ export function ChessGame() {
                   <button
                     key={mode}
                     onClick={() => setTimeControl(mode)}
-                    className={`p-3 rounded-lg border-2 transition-all text-center ${
-                      timeControl === mode
-                        ? "border-primary bg-primary/10 font-bold"
-                        : "border-border hover:border-primary/50"
-                    }`}
+                    className={`p-3 rounded-lg border-2 transition-all text-center ${timeControl === mode
+                      ? "border-primary bg-primary/10 font-bold"
+                      : "border-border hover:border-primary/50"
+                      }`}
                   >
                     <div className="text-sm">{TIME_CONTROLS[mode].label}</div>
                   </button>
@@ -344,9 +347,8 @@ export function ChessGame() {
             </div>
           </div>
           <div
-            className={`px-3 py-1 rounded font-mono text-xl font-bold ${
-              game.turn() !== playerColor && gameState === "playing" ? "bg-primary text-primary-foreground" : "bg-muted"
-            }`}
+            className={`px-3 py-1 rounded font-mono text-xl font-bold ${gameRef.current.turn() !== playerColor && gameState === "playing" ? "bg-primary text-primary-foreground" : "bg-muted"
+              }`}
           >
             {formatTime(playerColor === "w" ? blackTime : whiteTime)}
           </div>
@@ -354,7 +356,7 @@ export function ChessGame() {
 
         <Card className="overflow-hidden shadow-xl border-0 relative">
           <ChessBoard
-            game={game}
+            game={gameRef.current}
             fen={fen}
             onMove={makeMove}
             boardOrientation={playerColor === "w" ? "white" : "black"}
@@ -386,9 +388,8 @@ export function ChessGame() {
             </div>
           </div>
           <div
-            className={`px-3 py-1 rounded font-mono text-xl font-bold ${
-              game.turn() === playerColor && gameState === "playing" ? "bg-primary text-primary-foreground" : "bg-muted"
-            }`}
+            className={`px-3 py-1 rounded font-mono text-xl font-bold ${gameRef.current.turn() === playerColor && gameState === "playing" ? "bg-primary text-primary-foreground" : "bg-muted"
+              }`}
           >
             {formatTime(playerColor === "w" ? whiteTime : blackTime)}
           </div>
