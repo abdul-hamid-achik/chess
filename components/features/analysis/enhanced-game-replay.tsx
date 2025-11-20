@@ -134,22 +134,16 @@ export function EnhancedGameReplay({
         <div className="flex gap-2 max-w-[640px] mx-auto">
           {/* Evaluation bar */}
           {currentEvaluation !== undefined && (
-            <div className="relative w-8 bg-muted rounded-lg overflow-hidden flex-shrink-0">
-              {/* Top half (black/advantage for black) */}
+            <div className="relative w-8 bg-black rounded-lg overflow-hidden flex-shrink-0 border border-border">
+              {/* White section (bottom) - grows upward when White is winning */}
               <div
-                className={`w-full transition-all duration-300 ${getEvaluationColor(
-                  currentEvaluation
-                )}`}
+                className="absolute bottom-0 left-0 right-0 bg-white transition-all duration-300"
                 style={{
-                  height: `${getEvaluationBarHeight(currentEvaluation)}%`,
+                  height: `${100 - getEvaluationBarHeight(currentEvaluation)}%`,
                 }}
               />
-              {/* Center line */}
-              <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-border transform -translate-y-1/2" />
-              {/* Evaluation text */}
-              <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-[10px] font-mono font-bold text-white drop-shadow-md">
-                {currentEvaluation > 0 ? "W" : currentEvaluation < 0 ? "B" : "="}
-              </div>
+              {/* Center line (50-50) */}
+              <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-yellow-500 transform -translate-y-1/2 z-10" />
             </div>
           )}
 
