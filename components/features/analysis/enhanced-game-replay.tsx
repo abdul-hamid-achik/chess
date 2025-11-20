@@ -89,6 +89,19 @@ export function EnhancedGameReplay({
 
   const currentAnalysis = getCurrentAnalysis()
 
+  // Get current evaluation (including starting position)
+  const getCurrentEvaluation = () => {
+    if (currentMoveIndex === -1) {
+      // Starting position - get from first move's evaluationBefore or default to 0
+      return moveAnalyses.length > 0 && moveAnalyses[0].evaluationBefore !== undefined
+        ? moveAnalyses[0].evaluationBefore
+        : 0
+    }
+    return currentAnalysis?.evaluationAfter
+  }
+
+  const currentEvaluation = getCurrentEvaluation()
+
   // Get evaluation display
   const getEvaluationDisplay = (evaluation: number) => {
     const pawns = evaluation / 100
@@ -104,62 +117,94 @@ export function EnhancedGameReplay({
     return "bg-red-500"
   }
 
+  // Calculate evaluation bar height (0-100%)
+  const getEvaluationBarHeight = (evaluation: number) => {
+    // Convert centipawns to pawns for better visual range
+    const pawns = evaluation / 100
+    // Map from -10 to +10 pawns to 0-100%
+    // At 0 pawns (equal), bar should be at 50%
+    const percentage = 50 - pawns * 5
+    return Math.min(100, Math.max(0, percentage))
+  }
+
   return (
     <Card>
       <CardContent className="p-4 space-y-4">
         {/* Chessboard with evaluation bar */}
-        <div className="relative">
-          <div className="max-w-[600px] mx-auto">
+        <div className="flex gap-2 max-w-[640px] mx-auto">
+          {/* Evaluation bar */}
+          {currentEvaluation !== undefined && (
+            <div className="relative w-8 bg-muted rounded-lg overflow-hidden flex-shrink-0">
+              {/* Top half (black/advantage for black) */}
+              <div
+                className={`w-full transition-all duration-300 ${getEvaluationColor(
+                  currentEvaluation
+                )}`}
+                style={{
+                  height: `${getEvaluationBarHeight(currentEvaluation)}%`,
+                }}
+              />
+              {/* Center line */}
+              <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-border transform -translate-y-1/2" />
+              {/* Evaluation text */}
+              <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-[10px] font-mono font-bold text-white drop-shadow-md">
+                {currentEvaluation > 0 ? "W" : currentEvaluation < 0 ? "B" : "="}
+              </div>
+            </div>
+          )}
+
+          {/* Chessboard */}
+          <div className="flex-1">
             <Chessboard
               options={{
                 position: fen,
                 boardOrientation: playerColor === "w" ? "white" : "black",
                 allowDragging: false,
+                customDarkSquareStyle: { backgroundColor: "#b58863" },
+                customLightSquareStyle: { backgroundColor: "#f0d9b5" },
               }}
             />
           </div>
-
-          {/* Evaluation bar */}
-          {currentAnalysis && currentAnalysis.evaluationAfter !== undefined && (
-            <div className="absolute top-0 right-0 w-8 h-full bg-muted rounded-r-lg overflow-hidden">
-              <div
-                className={`w-full transition-all ${getEvaluationColor(
-                  currentAnalysis.evaluationAfter
-                )}`}
-                style={{
-                  height: `${Math.min(
-                    100,
-                    Math.max(0, 50 - (currentAnalysis.evaluationAfter / 100) * 5)
-                  )}%`,
-                }}
-              />
-              <div className="absolute top-1/2 left-0 right-0 h-px bg-border" />
-            </div>
-          )}
         </div>
 
         {/* Current move info */}
-        {currentAnalysis && (
-          <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-sm text-muted-foreground">
-                {formatMoveNumber(currentMoveIndex)}
-              </span>
-              <span className="font-semibold text-lg">{currentAnalysis.move}</span>
-              <Badge variant={getClassificationVariant(currentAnalysis.classification)}>
-                {MOVE_LABELS[currentAnalysis.classification]}
-              </Badge>
-            </div>
-            {currentAnalysis.evaluationAfter !== undefined && (
-              <div className="text-right">
-                <div className="text-xs text-muted-foreground">Evaluation</div>
-                <div className="font-mono font-semibold">
-                  {getEvaluationDisplay(currentAnalysis.evaluationAfter)}
-                </div>
+        <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+          {currentAnalysis ? (
+            <>
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-sm text-muted-foreground">
+                  {formatMoveNumber(currentMoveIndex)}
+                </span>
+                <span className="font-semibold text-lg">{currentAnalysis.move}</span>
+                <Badge variant={getClassificationVariant(currentAnalysis.classification)}>
+                  {MOVE_LABELS[currentAnalysis.classification]}
+                </Badge>
               </div>
-            )}
-          </div>
-        )}
+              {currentEvaluation !== undefined && (
+                <div className="text-right">
+                  <div className="text-xs text-muted-foreground">Evaluation</div>
+                  <div className="font-mono font-semibold">
+                    {getEvaluationDisplay(currentEvaluation)}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-sm text-muted-foreground">Starting Position</span>
+              </div>
+              {currentEvaluation !== undefined && (
+                <div className="text-right">
+                  <div className="text-xs text-muted-foreground">Evaluation</div>
+                  <div className="font-mono font-semibold">
+                    {getEvaluationDisplay(currentEvaluation)}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
 
         {/* Best move suggestion */}
         {currentAnalysis &&
