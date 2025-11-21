@@ -178,6 +178,53 @@ export const gameAnalysis = pgTable("game_analysis", {
   index("game_analysis_game_idx").on(table.gameId),
 ])
 
+// PvP (Player vs Player) tables
+export const pvpGames = pgTable("pvp_game", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  whitePlayerId: uuid("white_player_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  blackPlayerId: uuid("black_player_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+
+  ablyChannelId: text("ably_channel_id").notNull().unique(), // Ably channel for real-time communication
+
+  currentFen: text("current_fen").notNull(),
+  moves: json("moves").$type<string[]>().default([]).notNull(),
+
+  timeControl: text("time_control").notNull(), // 'bullet', 'blitz', 'rapid'
+  whiteTime: integer("white_time").notNull(), // Seconds remaining
+  blackTime: integer("black_time").notNull(),
+
+  status: text("status").notNull(), // 'waiting', 'active', 'completed'
+  result: text("result"), // 'white', 'black', 'draw'
+  endReason: text("end_reason"), // 'checkmate', 'timeout', 'resignation', 'draw'
+
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  lastMoveAt: timestamp("last_move_at"),
+  completedAt: timestamp("completed_at"),
+}, (table) => [
+  index("pvp_game_status_idx").on(table.status),
+  index("pvp_game_white_idx").on(table.whitePlayerId),
+  index("pvp_game_black_idx").on(table.blackPlayerId),
+  index("pvp_game_ably_channel_idx").on(table.ablyChannelId),
+])
+
+export const matchmakingQueue = pgTable("matchmaking_queue", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  rating: integer("rating").notNull(),
+  timeControl: text("time_control").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("queue_time_control_idx").on(table.timeControl),
+  index("queue_rating_idx").on(table.rating),
+  index("queue_user_idx").on(table.userId),
+])
+
 // Type exports for use in application
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
@@ -199,3 +246,9 @@ export type NewUserOpening = typeof userOpenings.$inferInsert
 
 export type GameAnalysis = typeof gameAnalysis.$inferSelect
 export type NewGameAnalysis = typeof gameAnalysis.$inferInsert
+
+export type PvpGame = typeof pvpGames.$inferSelect
+export type NewPvpGame = typeof pvpGames.$inferInsert
+
+export type MatchmakingQueueEntry = typeof matchmakingQueue.$inferSelect
+export type NewMatchmakingQueueEntry = typeof matchmakingQueue.$inferInsert
