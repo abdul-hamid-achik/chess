@@ -58,12 +58,16 @@ export function ChessGame() {
     setWinner(null)
     setGameOverReason("")
 
+    let chosenColor: PlayerColor
     if (selectedSide === "random") {
-      setPlayerColor(Math.random() > 0.5 ? "w" : "b")
+      const randomValue = Math.random()
+      chosenColor = randomValue >= 0.5 ? "w" : "b"
+      toast.info(`You are playing as ${chosenColor === "w" ? "White ⚪" : "Black ⚫"}`)
     } else {
-      setPlayerColor(selectedSide)
+      chosenColor = selectedSide
     }
 
+    setPlayerColor(chosenColor)
     setGameState("playing")
   }
 

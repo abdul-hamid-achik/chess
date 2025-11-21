@@ -169,24 +169,41 @@ export async function submitPuzzleAttempt(puzzleId: string, userMoves: string[])
 
 /**
  * Validate if user moves match the solution moves
+ * userMoves contains only the player's moves
+ * solutionMoves contains all moves (player and opponent alternating)
+ * Player moves are at even indices (0, 2, 4...), opponent moves at odd indices (1, 3, 5...)
  */
 function validateMoves(
   game: Chess,
   userMoves: string[],
   solutionMoves: string[]
 ): boolean {
-  if (userMoves.length !== solutionMoves.length) {
+  // Calculate expected number of player moves in the solution
+  const expectedPlayerMoves = Math.ceil(solutionMoves.length / 2)
+
+  // Check if user provided the correct number of moves
+  if (userMoves.length !== expectedPlayerMoves) {
     return false
   }
 
-  for (let i = 0; i < solutionMoves.length; i++) {
-    try {
-      const userMove = game.move(userMoves[i])
-      const solutionMove = solutionMoves[i]
+  // Validate each user move against the solution
+  for (let i = 0; i < userMoves.length; i++) {
+    const solutionMoveIndex = i * 2 // Player moves are at even indices
+    const solutionMove = solutionMoves[solutionMoveIndex]
 
-      // Check if the moves are the same (comparing SAN notation)
-      if (userMove.san !== solutionMove) {
+    try {
+      // Make the player's move
+      const move = game.move(userMoves[i])
+
+      // Compare with solution
+      if (move.san !== solutionMove) {
         return false
+      }
+
+      // Play the opponent's response to maintain correct board state
+      const opponentMoveIndex = solutionMoveIndex + 1
+      if (opponentMoveIndex < solutionMoves.length) {
+        game.move(solutionMoves[opponentMoveIndex])
       }
     } catch (e) {
       return false
@@ -305,9 +322,11 @@ export async function skipPuzzle(puzzleId: string) {
 }
 
 /**
- * Get hint for current puzzle (first move of solution)
+ * Get hint for current puzzle (next player move in solution)
+ * @param puzzleId - The puzzle ID
+ * @param playerMovesCount - Number of player moves already made
  */
-export async function getPuzzleHint(puzzleId: string) {
+export async function getPuzzleHint(puzzleId: string, playerMovesCount: number = 0) {
   try {
     const session = await auth()
 
@@ -326,11 +345,19 @@ export async function getPuzzleHint(puzzleId: string) {
     }
 
     const solutionMoves = puzzle.moves as string[]
-    const firstMove = solutionMoves[0]
+
+    // Player moves are at even indices: 0, 2, 4...
+    const nextPlayerMoveIndex = playerMovesCount * 2
+
+    if (nextPlayerMoveIndex >= solutionMoves.length) {
+      return { error: "No more moves in solution", hint: null }
+    }
+
+    const nextMove = solutionMoves[nextPlayerMoveIndex]
 
     return {
       success: true,
-      hint: `Try the move: ${firstMove}`,
+      hint: `Try the move: ${nextMove}`,
     }
   } catch (error) {
     console.error("Error getting hint:", error)

@@ -21,17 +21,21 @@ export function PuzzleSolver({ puzzle, onPuzzleComplete }: PuzzleSolverProps) {
   const [fen, setFen] = useState(puzzle.fen)
   const [userMoves, setUserMoves] = useState<string[]>([])
   const [solutionMoves] = useState<string[]>(puzzle.moves as string[])
-  const [currentMoveIndex, setCurrentMoveIndex] = useState(0)
   const [puzzleState, setPuzzleState] = useState<"playing" | "correct" | "wrong">("playing")
   const [attempts, setAttempts] = useState(0)
   const [hintUsed, setHintUsed] = useState(false)
+
+  // Determine player's color from starting position (whose turn it is to move)
+  const [playerColor] = useState<"white" | "black">(() => {
+    const initialGame = new Chess(puzzle.fen)
+    return initialGame.turn() === "w" ? "white" : "black"
+  })
 
   useEffect(() => {
     // Reset when puzzle changes
     setGame(new Chess(puzzle.fen))
     setFen(puzzle.fen)
     setUserMoves([])
-    setCurrentMoveIndex(0)
     setPuzzleState("playing")
     setAttempts(0)
     setHintUsed(false)
@@ -54,8 +58,11 @@ export function PuzzleSolver({ puzzle, onPuzzleComplete }: PuzzleSolverProps) {
 
       if (move === null) return false
 
-      // Check if this move matches the current solution move
-      const expectedMove = solutionMoves[currentMoveIndex]
+      // Player moves are at even indices: 0, 2, 4...
+      // Calculate which player move this should be
+      const playerMoveCount = userMoves.length
+      const solutionMoveIndex = playerMoveCount * 2
+      const expectedMove = solutionMoves[solutionMoveIndex]
 
       if (move.san === expectedMove) {
         // Correct move!
@@ -63,16 +70,22 @@ export function PuzzleSolver({ puzzle, onPuzzleComplete }: PuzzleSolverProps) {
         setUserMoves(newUserMoves)
         setGame(gameCopy)
         setFen(gameCopy.fen())
-        setCurrentMoveIndex(currentMoveIndex + 1)
+
+        // Reset hint for the next move
+        setHintUsed(false)
+
+        // Calculate expected number of player moves
+        const totalPlayerMoves = Math.ceil(solutionMoves.length / 2)
 
         // Check if puzzle is complete
-        if (currentMoveIndex + 1 === solutionMoves.length) {
+        if (newUserMoves.length === totalPlayerMoves) {
           handlePuzzleComplete(true, newUserMoves)
         } else {
-          // Make opponent's response if there is one
-          if (currentMoveIndex + 1 < solutionMoves.length) {
+          // Make opponent's response
+          const opponentMoveIndex = solutionMoveIndex + 1
+          if (opponentMoveIndex < solutionMoves.length) {
             setTimeout(() => {
-              makeOpponentMove(gameCopy)
+              makeOpponentMove(gameCopy, opponentMoveIndex)
             }, 500)
           }
         }
@@ -88,16 +101,20 @@ export function PuzzleSolver({ puzzle, onPuzzleComplete }: PuzzleSolverProps) {
     }
   }
 
-  const makeOpponentMove = (currentGame: Chess) => {
-    const opponentMove = solutionMoves[currentMoveIndex + 1]
+  const makeOpponentMove = (currentGame: Chess, opponentMoveIndex: number) => {
+    // Validate index
+    if (opponentMoveIndex < 0 || opponentMoveIndex >= solutionMoves.length) {
+      return
+    }
+
+    const opponentMove = solutionMoves[opponentMoveIndex]
 
     try {
       currentGame.move(opponentMove)
       setGame(new Chess(currentGame.fen()))
       setFen(currentGame.fen())
-      setCurrentMoveIndex(currentMoveIndex + 2)
-    } catch (e) {
-      console.error("Error making opponent move:", e)
+    } catch {
+      // Silent fail
     }
   }
 
@@ -126,7 +143,6 @@ export function PuzzleSolver({ puzzle, onPuzzleComplete }: PuzzleSolverProps) {
     setGame(newGame)
     setFen(newGame.fen())
     setUserMoves([])
-    setCurrentMoveIndex(0)
     setPuzzleState("playing")
   }
 
@@ -137,11 +153,13 @@ export function PuzzleSolver({ puzzle, onPuzzleComplete }: PuzzleSolverProps) {
   }
 
   const handleHint = async () => {
-    const response = await getPuzzleHint(puzzle.id)
+    const response = await getPuzzleHint(puzzle.id, userMoves.length)
 
     if (response.success && response.hint) {
       toast.info("Hint", { description: response.hint })
       setHintUsed(true)
+    } else if (response.error) {
+      toast.error("No hint available", { description: response.error })
     }
   }
 
@@ -192,7 +210,7 @@ export function PuzzleSolver({ puzzle, onPuzzleComplete }: PuzzleSolverProps) {
               options={{
                 position: fen,
                 onPieceDrop: handleMove,
-                boardOrientation: game.turn() === "w" ? "white" : "black",
+                boardOrientation: playerColor,
                 allowDragging: puzzleState === "playing",
                 boardStyle: {
                   borderRadius: "4px",
