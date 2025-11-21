@@ -41,7 +41,26 @@ export function EnhancedGameReplay({
     if (controlledMoveIndex === undefined) {
       setInternalMoveIndex(-1)
     }
-  }, [moves, controlledMoveIndex])
+  }, [moves])
+
+  // Update board position when currentMoveIndex changes (controlled mode)
+  useEffect(() => {
+    const newGame = new Chess()
+
+    for (let i = 0; i <= currentMoveIndex; i++) {
+      if (i < moves.length) {
+        try {
+          newGame.move(moves[i])
+        } catch (e) {
+          console.error("Error applying move:", moves[i], e)
+          break
+        }
+      }
+    }
+
+    setGame(newGame)
+    setFen(newGame.fen())
+  }, [currentMoveIndex, moves])
 
   const goToMove = (moveIndex: number) => {
     const newGame = new Chess()
