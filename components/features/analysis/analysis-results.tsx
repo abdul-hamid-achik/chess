@@ -25,9 +25,6 @@ export function AnalysisResults({ analysis, moves, playerColor }: AnalysisResult
       {/* Summary Card */}
       <AnalysisSummary summary={summary} />
 
-      {/* Evaluation Graph */}
-      <EvaluationGraph moves={analysis.moveAnalysis} />
-
       {/* Main Analysis View: Board + Move List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Enhanced Game Replay */}
@@ -50,6 +47,9 @@ export function AnalysisResults({ analysis, moves, playerColor }: AnalysisResult
           />
         </div>
       </div>
+
+      {/* Evaluation Graph */}
+      <EvaluationGraph moves={analysis.moveAnalysis} />
     </div>
   )
 }
