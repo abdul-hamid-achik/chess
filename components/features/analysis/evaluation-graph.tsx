@@ -117,16 +117,28 @@ export function EvaluationGraph({ moves }: EvaluationGraphProps) {
             data={dataWithStart}
             margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
           >
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" opacity={0.3} />
             <XAxis
               dataKey="moveNumber"
-              label={{ value: "Move Number", position: "insideBottom", offset: -5 }}
-              className="text-xs"
+              label={{
+                value: "Move Number",
+                position: "insideBottom",
+                offset: -5,
+                fill: "hsl(var(--foreground))"
+              }}
+              stroke="hsl(var(--foreground))"
+              tick={{ fill: "hsl(var(--foreground))" }}
             />
             <YAxis
-              label={{ value: "Evaluation (pawns)", angle: -90, position: "insideLeft" }}
+              label={{
+                value: "Evaluation (pawns)",
+                angle: -90,
+                position: "insideLeft",
+                fill: "hsl(var(--foreground))"
+              }}
               domain={[-10, 10]}
-              className="text-xs"
+              stroke="hsl(var(--foreground))"
+              tick={{ fill: "hsl(var(--foreground))" }}
             />
             <Tooltip content={<CustomTooltip />} />
             <ReferenceLine
