@@ -117,39 +117,39 @@ export function EvaluationGraph({ moves }: EvaluationGraphProps) {
             data={dataWithStart}
             margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" opacity={0.3} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#525252" opacity={0.5} />
             <XAxis
               dataKey="moveNumber"
               label={{
                 value: "Move Number",
                 position: "insideBottom",
                 offset: -5,
-                fill: "hsl(var(--foreground))"
+                fill: "#e5e5e5"
               }}
-              stroke="hsl(var(--foreground))"
-              tick={{ fill: "hsl(var(--foreground))" }}
+              stroke="#a3a3a3"
+              tick={{ fill: "#d4d4d4" }}
             />
             <YAxis
               label={{
                 value: "Evaluation (pawns)",
                 angle: -90,
                 position: "insideLeft",
-                fill: "hsl(var(--foreground))"
+                fill: "#e5e5e5"
               }}
               domain={[-10, 10]}
-              stroke="hsl(var(--foreground))"
-              tick={{ fill: "hsl(var(--foreground))" }}
+              stroke="#a3a3a3"
+              tick={{ fill: "#d4d4d4" }}
             />
             <Tooltip content={<CustomTooltip />} />
             <ReferenceLine
               y={0}
-              stroke="hsl(var(--muted-foreground))"
+              stroke="#71717a"
               strokeDasharray="3 3"
             />
             <Line
               type="monotone"
               dataKey="evaluation"
-              stroke="hsl(var(--primary))"
+              stroke="#3b82f6"
               strokeWidth={2}
               dot={<CustomDot />}
               activeDot={{ r: 6 }}
