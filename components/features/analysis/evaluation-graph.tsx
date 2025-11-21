@@ -21,6 +21,7 @@ export function EvaluationGraph({ moves }: EvaluationGraphProps) {
   // Prepare data for the chart
   const chartData = moves.map((move, index) => ({
     moveNumber: Math.floor(index / 2) + 1,
+    ply: index + 1, // Use ply (half-move) for X-axis to avoid duplicates
     moveIndex: index,
     evaluation: (move.evaluationAfter || 0) / 100, // Convert to pawns
     move: move.move,
@@ -31,6 +32,7 @@ export function EvaluationGraph({ moves }: EvaluationGraphProps) {
   const dataWithStart = [
     {
       moveNumber: 0,
+      ply: 0,
       moveIndex: -1,
       evaluation: 0,
       move: "Start",
@@ -119,9 +121,9 @@ export function EvaluationGraph({ moves }: EvaluationGraphProps) {
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#525252" opacity={0.5} />
             <XAxis
-              dataKey="moveNumber"
+              dataKey="ply"
               label={{
-                value: "Move Number",
+                value: "Move",
                 position: "insideBottom",
                 offset: -5,
                 fill: "#e5e5e5"
