@@ -16,15 +16,21 @@ interface Opening {
   fen: string
   description: string | null
   variations: Array<{ name: string; moves: string[] }> | null
+  popularity?: number
+  difficultyLevel?: string
+  themes?: string[]
+  winRate?: number | null
+  drawRate?: number | null
+  lossRate?: number | null
   createdAt: Date
 }
 
 interface OpeningBrowserProps {
-  onSelectOpening: (opening: Opening) => void
+  onOpeningClick?: (_opening: Opening) => void
   userRepertoireIds?: string[]
 }
 
-export function OpeningBrowser({ onSelectOpening, userRepertoireIds = [] }: OpeningBrowserProps) {
+export function OpeningBrowser({ onOpeningClick, userRepertoireIds = [] }: OpeningBrowserProps) {
   const [openings, setOpenings] = useState<Opening[]>([])
   const [filteredOpenings, setFilteredOpenings] = useState<Opening[]>([])
   const [searchTerm, setSearchTerm] = useState("")
@@ -118,7 +124,7 @@ export function OpeningBrowser({ onSelectOpening, userRepertoireIds = [] }: Open
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Search and Filters */}
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
@@ -172,7 +178,7 @@ export function OpeningBrowser({ onSelectOpening, userRepertoireIds = [] }: Open
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3">
           {filteredOpenings.map((opening) => {
             const color = getColorByFirstMove(opening.moves)
             const inRepertoire = isInRepertoire(opening.id)
@@ -180,53 +186,76 @@ export function OpeningBrowser({ onSelectOpening, userRepertoireIds = [] }: Open
             return (
               <Card
                 key={opening.id}
-                className="cursor-pointer hover:border-primary transition-colors"
-                onClick={() => onSelectOpening(opening)}
+                className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
+                onClick={() => onOpeningClick?.(opening)}
               >
-                <CardHeader>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg leading-tight">
+                <CardHeader className="pb-1.5">
+                  <div className="flex items-start justify-between gap-1.5">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-sm leading-tight mb-1">
                         {opening.name}
                       </CardTitle>
-                      <CardDescription className="mt-1">
+                      <div className="flex items-center gap-1 flex-wrap">
                         {opening.eco && (
-                          <Badge variant="secondary" className="mr-2">
+                          <Badge variant="secondary" className="text-xs font-mono">
                             {opening.eco}
                           </Badge>
                         )}
                         {color === "white" && (
-                          <Badge variant="outline">White</Badge>
+                          <Badge variant="outline" className="text-xs">⚪ White</Badge>
                         )}
                         {color === "black" && (
-                          <Badge variant="outline">Black</Badge>
+                          <Badge variant="outline" className="text-xs">⚫ Black</Badge>
                         )}
-                      </CardDescription>
+                        {opening.difficultyLevel && (
+                          <Badge
+                            variant="outline"
+                            className={`text-xs ${
+                              opening.difficultyLevel === "beginner" ? "border-green-500 text-green-600 dark:text-green-400" :
+                              opening.difficultyLevel === "intermediate" ? "border-blue-500 text-blue-600 dark:text-blue-400" :
+                              opening.difficultyLevel === "advanced" ? "border-orange-500 text-orange-600 dark:text-orange-400" :
+                              "border-purple-500 text-purple-600 dark:text-purple-400"
+                            }`}
+                          >
+                            {opening.difficultyLevel}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     {inRepertoire && (
-                      <Badge variant="default" className="shrink-0">
-                        In Repertoire
+                      <Badge variant="default" className="shrink-0 text-xs">
+                        ✓ Saved
                       </Badge>
                     )}
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground line-clamp-3">
+                <CardContent className="pt-0 space-y-1.5">
+                  <p className="text-xs text-muted-foreground line-clamp-2 leading-snug">
                     {opening.description || "No description available."}
                   </p>
-                  <div className="mt-3 pt-3 border-t">
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-medium">Moves:</span>{" "}
-                      {opening.moves.slice(0, 5).join(" ")}{" "}
-                      {opening.moves.length > 5 && "..."}
-                    </p>
-                    {opening.variations && opening.variations.length > 0 && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        <span className="font-medium">Variations:</span>{" "}
-                        {opening.variations.length} available
-                      </p>
-                    )}
+
+                  <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
+                    <div className="flex items-center gap-2">
+                      <span className="flex items-center gap-1">
+                        <span className="font-medium">{opening.moves.length}</span> moves
+                      </span>
+                      {opening.variations && opening.variations.length > 0 && (
+                        <span className="flex items-center gap-1">
+                          <span className="font-medium">{opening.variations.length}</span> variations
+                        </span>
+                      )}
+                    </div>
                   </div>
+
+                  {opening.themes && opening.themes.length > 0 && (
+                    <div className="flex gap-1 flex-wrap">
+                      {opening.themes.slice(0, 3).map((theme) => (
+                        <Badge key={theme} variant="secondary" className="text-xs">
+                          {theme}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )

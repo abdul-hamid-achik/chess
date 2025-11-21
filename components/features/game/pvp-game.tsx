@@ -5,8 +5,8 @@ import { Chess } from "chess.js"
 import { Chessboard } from "react-chessboard"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Flag } from "lucide-react"
-import { makeMove, resignGame } from "@/lib/actions/pvp-games"
+import { Flag, WifiOff } from "lucide-react"
+import { makeMove, resignGame, timeoutGame, offerDraw, acceptDraw, declineDraw } from "@/lib/actions/pvp-games"
 import { getAblyClient } from "@/lib/ably/client"
 import { toast } from "sonner"
 import type { PvpGame, User } from "@/lib/db/schema"
@@ -23,14 +23,66 @@ export function PvPGame({ game, opponent, userId }: PvPGameProps) {
   const [whiteTime, setWhiteTime] = useState(game.whiteTime)
   const [blackTime, setBlackTime] = useState(game.blackTime)
   const [gameStatus, setGameStatus] = useState(game.status)
+  const [drawOfferedBy, setDrawOfferedBy] = useState<string | null>(game.drawOfferedBy)
+  const [connectionState, setConnectionState] = useState<"connected" | "connecting" | "disconnected">("connecting")
 
   const playerColor = game.whitePlayerId === userId ? "w" : "b"
   const isWhite = playerColor === "w"
+
+  // Countdown timer
+  useEffect(() => {
+    if (gameStatus !== "active") return
+
+    const interval = setInterval(() => {
+      const currentTurn = gameRef.current.turn()
+
+      if (currentTurn === "w") {
+        setWhiteTime((prev) => {
+          if (prev <= 0) {
+            clearInterval(interval)
+            handleTimeout("white")
+            return 0
+          }
+          return prev - 1
+        })
+      } else {
+        setBlackTime((prev) => {
+          if (prev <= 0) {
+            clearInterval(interval)
+            handleTimeout("black")
+            return 0
+          }
+          return prev - 1
+        })
+      }
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [gameStatus, fen]) // Re-sync when fen changes (after opponent's move)
 
   // Subscribe to Ably channel
   useEffect(() => {
     const client = getAblyClient()
     const channel = client.channels.get(game.ablyChannelId)
+
+    // Monitor connection state
+    client.connection.on("connected", () => {
+      setConnectionState("connected")
+    })
+
+    client.connection.on("connecting", () => {
+      setConnectionState("connecting")
+    })
+
+    client.connection.on("disconnected", () => {
+      setConnectionState("disconnected")
+      toast.error("Connection lost. Attempting to reconnect...")
+    })
+
+    client.connection.on("failed", () => {
+      setConnectionState("disconnected")
+      toast.error("Connection failed")
+    })
 
     const handleMessage = (message: any) => {
       switch (message.name) {
@@ -45,6 +97,18 @@ export function PvPGame({ game, opponent, userId }: PvPGameProps) {
         case "time:update":
           setWhiteTime(message.data.whiteTime)
           setBlackTime(message.data.blackTime)
+          break
+        case "draw:offer":
+          setDrawOfferedBy(message.data.offeredBy)
+          if (message.data.offeredBy !== userId) {
+            toast.info("Opponent offers a draw")
+          }
+          break
+        case "draw:decline":
+          setDrawOfferedBy(null)
+          if (message.data.declinedBy !== userId) {
+            toast.info("Draw offer declined")
+          }
           break
       }
     }
@@ -95,6 +159,47 @@ export function PvPGame({ game, opponent, userId }: PvPGameProps) {
     }
   }
 
+  const handleTimeout = async (side: "white" | "black") => {
+    const result = await timeoutGame(game.id, side)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      setGameStatus("completed")
+      const winner = side === "white" ? "black" : "white"
+      toast.info(`${winner} wins on time!`)
+    }
+  }
+
+  const handleOfferDraw = async () => {
+    const result = await offerDraw(game.id)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success("Draw offer sent")
+      setDrawOfferedBy(userId)
+    }
+  }
+
+  const handleAcceptDraw = async () => {
+    const result = await acceptDraw(game.id)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      setGameStatus("completed")
+      toast.success("Draw accepted")
+    }
+  }
+
+  const handleDeclineDraw = async () => {
+    const result = await declineDraw(game.id)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.info("Draw offer declined")
+      setDrawOfferedBy(null)
+    }
+  }
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
@@ -103,6 +208,18 @@ export function PvPGame({ game, opponent, userId }: PvPGameProps) {
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 items-start justify-center max-w-6xl mx-auto">
+      {connectionState === "disconnected" && (
+        <div className="fixed top-4 right-4 z-50 p-4 bg-red-500 text-white rounded-lg shadow-lg flex items-center gap-2">
+          <WifiOff className="w-5 h-5" />
+          <span className="font-semibold">Disconnected - Reconnecting...</span>
+        </div>
+      )}
+
+      {connectionState === "connecting" && (
+        <div className="fixed top-4 right-4 z-50 p-4 bg-yellow-500 text-white rounded-lg shadow-lg flex items-center gap-2">
+          <span className="font-semibold">Connecting...</span>
+        </div>
+      )}
       <div className="flex-1 w-full max-w-[600px]">
         <Card>
           <CardContent className="p-4">
@@ -161,10 +278,38 @@ export function PvPGame({ game, opponent, userId }: PvPGameProps) {
             </div>
 
             {gameStatus === "active" && (
-              <Button onClick={handleResign} variant="destructive" className="w-full">
-                <Flag className="w-4 h-4 mr-2" />
-                Resign
-              </Button>
+              <div className="space-y-2">
+                {drawOfferedBy && drawOfferedBy !== userId && (
+                  <div className="p-4 bg-yellow-100 dark:bg-yellow-900 rounded-lg space-y-2">
+                    <p className="text-sm font-semibold text-center">Opponent offers a draw</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button onClick={handleAcceptDraw} variant="default" size="sm">
+                        Accept
+                      </Button>
+                      <Button onClick={handleDeclineDraw} variant="outline" size="sm">
+                        Decline
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {drawOfferedBy === userId && (
+                  <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                    <p className="text-sm text-center">Draw offer sent</p>
+                  </div>
+                )}
+
+                {!drawOfferedBy && (
+                  <Button onClick={handleOfferDraw} variant="outline" className="w-full">
+                    Offer Draw
+                  </Button>
+                )}
+
+                <Button onClick={handleResign} variant="destructive" className="w-full">
+                  <Flag className="w-4 h-4 mr-2" />
+                  Resign
+                </Button>
+              </div>
             )}
 
             {gameStatus === "completed" && (

@@ -13,14 +13,14 @@ export function getAblyClient(): Ably.Realtime {
   return ablyClient
 }
 
-export function useAblyChannel(channelName: string, callback: (message: Ably.Message) => void) {
+export function useAblyChannel(channelName: string, _callback: (message: Ably.Message) => void) {
   const client = getAblyClient()
   const channel = client.channels.get(channelName)
 
-  channel.subscribe(callback)
+  channel.subscribe(_callback)
 
   return {
     channel,
-    unsubscribe: () => channel.unsubscribe(callback),
+    unsubscribe: () => channel.unsubscribe(_callback),
   }
 }

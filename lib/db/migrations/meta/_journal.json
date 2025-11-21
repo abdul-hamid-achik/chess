@@ -8,6 +8,20 @@
       "when": 1763692809534,
       "tag": "0000_far_hemingway",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1763705849442,
+      "tag": "0001_simple_jean_grey",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1763708678012,
+      "tag": "0002_groovy_nick_fury",
+      "breakpoints": true
     }
   ]
 }

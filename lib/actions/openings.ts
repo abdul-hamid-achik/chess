@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth/config"
 import { db } from "@/lib/db"
 import { openings, userOpenings } from "@/lib/db/schema"
-import { eq, and, ilike, or, desc } from "drizzle-orm"
+import { eq, and, ilike, or, desc, inArray, sql, asc } from "drizzle-orm"
 import type { NewUserOpening } from "@/lib/db/schema"
 
 /**
@@ -13,28 +13,81 @@ export async function getAllOpenings(filters?: {
   searchTerm?: string
   color?: "w" | "b" | "both"
   ecoCode?: string
+  difficultyLevel?: "beginner" | "intermediate" | "advanced" | "master"
+  themes?: string[]
+  sortBy?: "name" | "popularity" | "difficulty" | "recent"
+  sortOrder?: "asc" | "desc"
 }) {
   try {
     let query = db.select().from(openings)
+    const conditions = []
 
     // Apply search filter if provided
     if (filters?.searchTerm) {
       const searchPattern = `%${filters.searchTerm}%`
-      query = query.where(
+      conditions.push(
         or(
           ilike(openings.name, searchPattern),
           ilike(openings.eco, searchPattern),
           ilike(openings.description, searchPattern)
         )
-      ) as typeof query
+      )
     }
 
     // Apply ECO code filter if provided
     if (filters?.ecoCode) {
-      query = query.where(eq(openings.eco, filters.ecoCode)) as typeof query
+      conditions.push(eq(openings.eco, filters.ecoCode))
     }
 
-    const allOpenings = await query.orderBy(openings.name)
+    // Apply difficulty filter if provided
+    if (filters?.difficultyLevel) {
+      conditions.push(eq(openings.difficultyLevel, filters.difficultyLevel))
+    }
+
+    // Apply theme filter if provided (at least one matching theme)
+    if (filters?.themes && filters.themes.length > 0) {
+      conditions.push(
+        sql`${openings.themes}::jsonb ?| array[${sql.join(
+          filters.themes.map((theme) => sql`${theme}`),
+          sql`, `
+        )}]`
+      )
+    }
+
+    // Combine all conditions
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as typeof query
+    }
+
+    // Apply sorting
+    const sortBy = filters?.sortBy || "name"
+    const sortOrder = filters?.sortOrder || "asc"
+
+    switch (sortBy) {
+      case "popularity":
+        query = (sortOrder === "desc"
+          ? query.orderBy(desc(openings.popularity))
+          : query.orderBy(asc(openings.popularity))) as typeof query
+        break
+      case "difficulty":
+        query = (sortOrder === "desc"
+          ? query.orderBy(desc(openings.difficultyLevel))
+          : query.orderBy(asc(openings.difficultyLevel))) as typeof query
+        break
+      case "recent":
+        query = (sortOrder === "desc"
+          ? query.orderBy(desc(openings.createdAt))
+          : query.orderBy(asc(openings.createdAt))) as typeof query
+        break
+      case "name":
+      default:
+        query = (sortOrder === "desc"
+          ? query.orderBy(desc(openings.name))
+          : query.orderBy(asc(openings.name))) as typeof query
+        break
+    }
+
+    const allOpenings = await query
 
     return { success: true, openings: allOpenings }
   } catch (error) {
@@ -95,6 +148,12 @@ export async function getUserOpenings() {
           fen: openings.fen,
           description: openings.description,
           variations: openings.variations,
+          popularity: openings.popularity,
+          difficultyLevel: openings.difficultyLevel,
+          themes: openings.themes,
+          winRate: openings.winRate,
+          drawRate: openings.drawRate,
+          lossRate: openings.lossRate,
         },
       })
       .from(userOpenings)
@@ -375,5 +434,34 @@ export async function isInRepertoire(openingId: string, color: "w" | "b") {
   } catch (error) {
     console.error("Error checking repertoire:", error)
     return { isInRepertoire: false }
+  }
+}
+
+/**
+ * Get multiple openings by their IDs (for comparison)
+ */
+export async function getOpeningsByIds(openingIds: string[]) {
+  try {
+    if (!openingIds || openingIds.length === 0) {
+      return { error: "No opening IDs provided", openings: [] }
+    }
+
+    if (openingIds.length > 5) {
+      return { error: "Cannot compare more than 5 openings at once", openings: [] }
+    }
+
+    const selectedOpenings = await db
+      .select()
+      .from(openings)
+      .where(inArray(openings.id, openingIds))
+
+    if (selectedOpenings.length === 0) {
+      return { error: "No openings found with the provided IDs", openings: [] }
+    }
+
+    return { success: true, openings: selectedOpenings }
+  } catch (error) {
+    console.error("Error fetching openings by IDs:", error)
+    return { error: "Failed to fetch openings", openings: [] }
   }
 }

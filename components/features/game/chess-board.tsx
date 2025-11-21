@@ -4,16 +4,26 @@ import { useState } from "react"
 import { Chessboard } from "react-chessboard"
 
 interface ChessBoardProps {
-  fen: string
-  onMove: (_move: { from: string; to: string; promotion?: string }) => boolean
+  fen?: string
+  onMove?: (_move: { from: string; to: string; promotion?: string }) => boolean
   boardOrientation?: "white" | "black"
+  options?: {
+    position?: string
+    allowDragging?: boolean
+    boardOrientation?: "white" | "black"
+  }
 }
 
-export function ChessBoard({ fen, onMove, boardOrientation = "white" }: ChessBoardProps) {
+export function ChessBoard({ fen, onMove, boardOrientation = "white", options }: ChessBoardProps) {
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null)
 
+  // Support both direct props and options object
+  const position = options?.position || fen || "start"
+  const orientation = options?.boardOrientation || boardOrientation
+  const allowDragging = options?.allowDragging !== false && !!onMove
+
   function onPieceDrop({ sourceSquare, targetSquare }: { piece?: unknown; sourceSquare: string; targetSquare: string | null }) {
-    if (!targetSquare) return false
+    if (!targetSquare || !onMove) return false
 
     const move = {
       from: sourceSquare,
@@ -30,6 +40,8 @@ export function ChessBoard({ fen, onMove, boardOrientation = "white" }: ChessBoa
   }
 
   function onSquareClick({ square }: { piece?: unknown; square: string }) {
+    if (!onMove) return
+
     if (selectedSquare === null) {
       // First click - select the square
       setSelectedSquare(square)
@@ -57,12 +69,12 @@ export function ChessBoard({ fen, onMove, boardOrientation = "white" }: ChessBoa
     <div className="w-full h-full">
       <Chessboard
         options={{
-          position: fen,
-          onPieceDrop: onPieceDrop,
-          onSquareClick: onSquareClick,
-          boardOrientation: boardOrientation,
-          allowDragging: true,
-          squareStyles: selectedSquare
+          position: position,
+          onPieceDrop: allowDragging ? onPieceDrop : undefined,
+          onSquareClick: allowDragging ? onSquareClick : undefined,
+          boardOrientation: orientation,
+          allowDragging: allowDragging,
+          squareStyles: selectedSquare && allowDragging
             ? {
                 [selectedSquare]: {
                   backgroundColor: "rgba(255, 255, 0, 0.4)",

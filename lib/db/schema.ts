@@ -8,6 +8,7 @@ import {
   primaryKey,
   json,
   index,
+  real,
 } from "drizzle-orm/pg-core"
 import type { AdapterAccount } from "next-auth/adapters"
 
@@ -132,10 +133,19 @@ export const openings = pgTable("opening", {
   fen: text("fen").notNull(), // Resulting position
   description: text("description"),
   variations: json("variations").$type<Array<{ name: string; moves: string[] }>>(),
+  // Stats and metadata
+  popularity: integer("popularity").default(0).notNull(), // Higher = more popular
+  difficultyLevel: text("difficulty_level").default("intermediate").notNull(), // beginner, intermediate, advanced, master
+  themes: json("themes").$type<string[]>().default([]).notNull(), // ["tactical", "positional", "sharp", "solid", "popular"]
+  winRate: real("win_rate"), // Percentage as decimal (e.g., 0.45 = 45%)
+  drawRate: real("draw_rate"), // Percentage as decimal
+  lossRate: real("loss_rate"), // Percentage as decimal
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("opening_name_idx").on(table.name),
   index("opening_eco_idx").on(table.eco),
+  index("opening_difficulty_idx").on(table.difficultyLevel),
+  index("opening_popularity_idx").on(table.popularity),
 ])
 
 export const userOpenings = pgTable("user_opening", {
@@ -200,6 +210,8 @@ export const pvpGames = pgTable("pvp_game", {
   status: text("status").notNull(), // 'waiting', 'active', 'completed'
   result: text("result"), // 'white', 'black', 'draw'
   endReason: text("end_reason"), // 'checkmate', 'timeout', 'resignation', 'draw'
+
+  drawOfferedBy: uuid("draw_offered_by"), // ID of player who offered draw (null if no pending offer)
 
   startedAt: timestamp("started_at").defaultNow().notNull(),
   lastMoveAt: timestamp("last_move_at"),

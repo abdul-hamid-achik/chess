@@ -12,7 +12,7 @@ export function MatchmakingModal() {
   const [searching, setSearching] = useState(false)
   const router = useRouter()
 
-  const handleJoinQueue = async (timeControl: "bullet" | "blitz" | "rapid") {
+  const handleJoinQueue = async (timeControl: "bullet" | "blitz" | "rapid") => {
     setSearching(true)
     const result = await joinQueue(timeControl)
 

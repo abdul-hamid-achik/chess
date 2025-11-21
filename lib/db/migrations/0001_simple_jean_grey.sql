@@ -1,0 +1,1 @@
+ALTER TABLE "pvp_game" ADD COLUMN "draw_offered_by" uuid;

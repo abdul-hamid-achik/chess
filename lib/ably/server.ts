@@ -24,7 +24,7 @@ export function getAblyServer() {
 export async function publishToChannel(
   channelId: string,
   eventName: string,
-  data: any
+  data: Record<string, unknown>
 ) {
   try {
     const ably = getAblyServer()

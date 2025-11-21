@@ -1,6 +1,6 @@
 import type React from "react"
 import Link from "next/link"
-import { Home, Puzzle, GraduationCap, User, BarChart3, LogIn, UserPlus } from "lucide-react"
+import { Home, Puzzle, GraduationCap, User, BarChart3, LogIn, UserPlus, Users, Trophy } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { auth } from "@/lib/auth/config"
 
@@ -26,6 +26,12 @@ export async function Sidebar({ className }: SidebarProps) {
                 Play
               </button>
             </Link>
+            <Link href="/play-pvp">
+              <button className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors justify-start">
+                <Users className="h-5 w-5" />
+                Play Online
+              </button>
+            </Link>
             <Link href="/puzzles">
               <button className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors justify-start">
                 <Puzzle className="h-5 w-5" />
@@ -42,6 +48,12 @@ export async function Sidebar({ className }: SidebarProps) {
               <button className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors justify-start">
                 <BarChart3 className="h-5 w-5" />
                 Analysis
+              </button>
+            </Link>
+            <Link href="/leaderboard">
+              <button className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors justify-start">
+                <Trophy className="h-5 w-5" />
+                Leaderboard
               </button>
             </Link>
           </div>
