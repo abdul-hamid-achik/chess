@@ -25,7 +25,7 @@ export function classifyMove(
   const delta = evaluationAfter - evaluationBefore
 
   // Brilliant: Move is actually better than what the engine suggested
-  if (engineBestMove && playedMove && playedMove !== engineBestMove && delta > EVALUATION_THRESHOLDS.BRILLIANT) {
+  if (engineBestMove && playedMove && playedMove !== engineBestMove && delta < EVALUATION_THRESHOLDS.BRILLIANT) {
     return "brilliant"
   }
 

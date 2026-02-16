@@ -60,7 +60,7 @@ export default function LearnPage() {
     }
   }
 
-  const handleOpeningClick = (opening: Opening) => {
+  const handleOpeningClick = (opening: Pick<Opening, "id">) => {
     // Navigate to detail page
     router.push(`/learn/${opening.id}`)
   }

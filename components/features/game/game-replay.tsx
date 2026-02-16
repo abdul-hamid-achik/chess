@@ -116,7 +116,7 @@ export function GameReplay({ moves, initialFen: _initialFen, playerColor }: Game
 
           <div className="max-h-64 overflow-y-auto">
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-              {moves.reduce((acc: any[], move, i) => {
+              {moves.reduce((acc: React.ReactNode[], move, i) => {
                 const isCurrentMove = i === currentMoveIndex
 
                 if (i % 2 === 0) {

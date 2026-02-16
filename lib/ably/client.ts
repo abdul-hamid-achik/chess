@@ -13,7 +13,7 @@ export function getAblyClient(): Ably.Realtime {
   return ablyClient
 }
 
-export function useAblyChannel(channelName: string, _callback: (message: Ably.Message) => void) {
+export function useAblyChannel(channelName: string, _callback: (_message: Ably.Message) => void) {
   const client = getAblyClient()
   const channel = client.channels.get(channelName)
 

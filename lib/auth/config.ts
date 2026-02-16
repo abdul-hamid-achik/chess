@@ -24,7 +24,7 @@ export const {
   signIn,
   signOut,
 } = NextAuth({
-  adapter: DrizzleAdapter(db),
+  adapter: DrizzleAdapter(db) as never,
   session: {
     strategy: "jwt",
   },

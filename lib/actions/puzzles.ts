@@ -3,9 +3,15 @@
 import { auth } from "@/lib/auth/config"
 import { db } from "@/lib/db"
 import { puzzles, userPuzzles } from "@/lib/db/schema"
-import { eq, and, sql, isNull, or } from "drizzle-orm"
-import type { Puzzle, UserPuzzle } from "@/lib/db/schema"
+import { eq, and, sql } from "drizzle-orm"
+import type { UserPuzzle } from "@/lib/db/schema"
 import { Chess } from "chess.js"
+import { z } from "zod"
+
+const submitPuzzleAttemptSchema = z.object({
+  puzzleId: z.string().uuid(),
+  userMoves: z.array(z.string().min(2).max(10)),
+})
 
 /**
  * Get a random puzzle based on optional difficulty filter
@@ -86,6 +92,11 @@ export async function getPuzzle(difficulty?: "easy" | "medium" | "hard" | "all")
  * Returns whether the attempt was correct and updates user statistics
  */
 export async function submitPuzzleAttempt(puzzleId: string, userMoves: string[]) {
+  const parsed = submitPuzzleAttemptSchema.safeParse({ puzzleId, userMoves })
+  if (!parsed.success) {
+    return { error: "Invalid puzzle attempt data", success: false }
+  }
+
   try {
     const session = await auth()
 
@@ -130,7 +141,7 @@ export async function submitPuzzleAttempt(puzzleId: string, userMoves: string[])
         .set({
           attempts: existingAttempt[0].attempts + 1,
           solved: isCorrect || existingAttempt[0].solved,
-          lastAttemptAt: new Date(),
+          solvedAt: new Date(),
         })
         .where(eq(userPuzzles.id, existingAttempt[0].id))
         .returning()
@@ -143,14 +154,14 @@ export async function submitPuzzleAttempt(puzzleId: string, userMoves: string[])
       }
     } else {
       // Create new attempt
-      const [newAttempt] = await db
+      const [_newAttempt] = await db
         .insert(userPuzzles)
         .values({
           userId: session.user.id,
           puzzleId: puzzleId,
           attempts: 1,
           solved: isCorrect,
-          lastAttemptAt: new Date(),
+          solvedAt: new Date(),
         })
         .returning()
 
@@ -205,7 +216,7 @@ function validateMoves(
       if (opponentMoveIndex < solutionMoves.length) {
         game.move(solutionMoves[opponentMoveIndex])
       }
-    } catch (e) {
+    } catch (_e) {
       return false
     }
   }
@@ -296,11 +307,11 @@ export async function skipPuzzle(puzzleId: string) {
       .limit(1)
 
     if (existingAttempt.length > 0) {
-      // Just update the last attempt time
+      // Just update the solved time
       await db
         .update(userPuzzles)
         .set({
-          lastAttemptAt: new Date(),
+          solvedAt: new Date(),
         })
         .where(eq(userPuzzles.id, existingAttempt[0].id))
     } else {
@@ -310,7 +321,7 @@ export async function skipPuzzle(puzzleId: string) {
         puzzleId: puzzleId,
         attempts: 0,
         solved: false,
-        lastAttemptAt: new Date(),
+        solvedAt: new Date(),
       })
     }
 

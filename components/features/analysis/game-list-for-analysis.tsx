@@ -12,13 +12,11 @@ import type { GameWithAnalysis } from "@/types/analysis"
 interface GameListForAnalysisProps {
   games: GameWithAnalysis[]
   loading?: boolean
-  onGameAnalyzed?: () => void
 }
 
 export function GameListForAnalysis({
   games,
   loading,
-  onGameAnalyzed,
 }: GameListForAnalysisProps) {
   const router = useRouter()
   const [analyzingGameId, setAnalyzingGameId] = useState<string | null>(null)

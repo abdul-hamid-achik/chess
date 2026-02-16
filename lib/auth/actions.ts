@@ -5,12 +5,20 @@ import { users } from "@/lib/db/schema"
 import bcrypt from "bcryptjs"
 import { eq } from "drizzle-orm"
 import { signIn } from "./config"
+import { z } from "zod"
 
-export async function signUpUser(data: {
-  name: string
-  email: string
-  password: string
-}) {
+const signUpSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+})
+
+export async function signUpUser(data: z.infer<typeof signUpSchema>) {
+  const parsed = signUpSchema.safeParse(data)
+  if (!parsed.success) {
+    return { error: parsed.error.errors[0]?.message ?? "Invalid input" }
+  }
+
   try {
     // Check if user already exists
     const existingUser = await db.query.users.findFirst({

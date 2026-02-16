@@ -3,22 +3,30 @@
 import { auth } from "@/lib/auth/config"
 import { db } from "@/lib/db"
 import { games, users } from "@/lib/db/schema"
-import { eq, desc } from "drizzle-orm"
+import { eq, desc, sql } from "drizzle-orm"
+import { z } from "zod"
 import type { NewGame } from "@/lib/db/schema"
 
-export async function saveGame(gameData: {
-  playerColor: "w" | "b"
-  difficulty: string
-  timeControl: string
-  result: "win" | "loss" | "draw"
-  endReason: string
-  finalFen: string
-  playerTime: number
-  opponentTime: number
-  moves: string[]
-  pgn: string
-}) {
+const saveGameSchema = z.object({
+  playerColor: z.enum(["w", "b"]),
+  difficulty: z.string(),
+  timeControl: z.string(),
+  result: z.enum(["win", "loss", "draw"]),
+  endReason: z.string(),
+  finalFen: z.string(),
+  playerTime: z.number(),
+  opponentTime: z.number(),
+  moves: z.array(z.string()),
+  pgn: z.string(),
+})
+
+export async function saveGame(gameData: z.infer<typeof saveGameSchema>) {
   try {
+    const parsed = saveGameSchema.safeParse(gameData)
+    if (!parsed.success) {
+      return { error: "Invalid game data" }
+    }
+
     const session = await auth()
 
     if (!session?.user?.id) {
@@ -54,7 +62,7 @@ export async function saveGame(gameData: {
       await db
         .update(users)
         .set({
-          rating: session.user.rating + ratingChange
+          rating: sql`${users.rating} + ${ratingChange}`
         })
         .where(eq(users.id, session.user.id))
     }

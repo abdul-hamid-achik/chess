@@ -1,17 +1,24 @@
 "use server"
 
+import { auth } from "@/lib/auth/config"
 import { db } from "@/lib/db"
 import { users, pvpGames } from "@/lib/db/schema"
 import { desc, eq, sql } from "drizzle-orm"
 
 export async function getLeaderboard(limit: number = 100) {
+  const clampedLimit = Math.min(Math.max(1, limit), 100)
+
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return { error: "Unauthorized" }
+    }
+
     // Get top players by rating with PvP stats
     const leaderboard = await db
       .select({
         id: users.id,
         name: users.name,
-        email: users.email,
         rating: users.rating,
         gamesPlayed: sql<number>`
           (SELECT COUNT(*)
@@ -45,7 +52,7 @@ export async function getLeaderboard(limit: number = 100) {
       })
       .from(users)
       .orderBy(desc(users.rating))
-      .limit(limit)
+      .limit(clampedLimit)
 
     return {
       success: true,

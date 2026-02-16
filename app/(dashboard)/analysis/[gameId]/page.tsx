@@ -175,7 +175,7 @@ export default function GameAnalysisPage() {
         <AnalysisResults
           analysis={analysis}
           moves={game.moves}
-          playerColor={game.playerColor}
+          playerColor={game.playerColor as "w" | "b"}
         />
       </div>
     </div>

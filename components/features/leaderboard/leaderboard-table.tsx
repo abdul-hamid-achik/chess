@@ -9,7 +9,6 @@ interface LeaderboardPlayer {
   rank: number
   id: string
   name: string | null
-  email: string
   rating: number
   gamesPlayed: number
   wins: number
@@ -87,7 +86,7 @@ export function LeaderboardTable({ players, currentUserId }: LeaderboardTablePro
                       <TableCell className="text-center">{getRankIcon(player.rank)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <span>{player.name || player.email}</span>
+                          <span>{player.name || "Anonymous"}</span>
                           {isCurrentUser && (
                             <Badge variant="default" className="text-xs">
                               You

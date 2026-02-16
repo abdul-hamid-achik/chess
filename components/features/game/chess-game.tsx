@@ -6,6 +6,18 @@ import { ChessBoard } from "./chess-board"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { RotateCcw, ChevronLeft, ChevronRight, Flag, Play } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { formatTime } from "@/lib/utils/format-time"
 import { getBestMove, type Difficulty } from "@/lib/chess/engine"
 import { saveGame } from "@/lib/actions/games"
 import { analyzeGame } from "@/lib/actions/analysis"
@@ -23,11 +35,11 @@ const TIME_CONTROLS: Record<TimeControl, { label: string; time: number }> = {
   classical: { label: "Classical (30 min)", time: 1800 },
 }
 
-export function ChessGame() {
+export function ChessGame({ userRating = 1200 }: { userRating?: number }) {
   const gameRef = useRef(new Chess())
   const [fen, setFen] = useState(gameRef.current.fen())
   const [moveHistory, setMoveHistory] = useState<string[]>([])
-  const [captured, setCaptured] = useState<{ w: string[]; b: string[] }>({ w: [], b: [] })
+  const [_captured, setCaptured] = useState<{ w: string[]; b: string[] }>({ w: [], b: [] })
   const [difficulty, setDifficulty] = useState<Difficulty>("Basic")
   const [gameState, setGameState] = useState<GameState>("setup")
 
@@ -44,12 +56,6 @@ export function ChessGame() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
 
   const router = useRouter()
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, "0")}`
-  }
 
   const startGame = () => {
     const initialTime = TIME_CONTROLS[timeControl].time
@@ -390,7 +396,6 @@ export function ChessGame() {
 
         <Card className="overflow-hidden shadow-xl border-0 relative">
           <ChessBoard
-            game={gameRef.current}
             fen={fen}
             onMove={makeMove}
             boardOrientation={playerColor === "w" ? "white" : "black"}
@@ -425,7 +430,7 @@ export function ChessGame() {
             </div>
             <div>
               <div className="font-bold">You</div>
-              <div className="text-xs text-muted-foreground">Rating: 1200</div>
+              <div className="text-xs text-muted-foreground">Rating: {userRating}</div>
             </div>
           </div>
           <div
@@ -450,7 +455,7 @@ export function ChessGame() {
 
           <div className="flex-1 overflow-y-auto mb-4">
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-              {moveHistory.reduce((acc: any[], move, i) => {
+              {moveHistory.reduce((acc: React.ReactNode[], move, i) => {
                 if (i % 2 === 0) {
                   acc.push(
                     <div key={i} className="flex items-center">
@@ -473,14 +478,27 @@ export function ChessGame() {
           </div>
 
           <div className="flex gap-2 mt-auto pt-4 border-t">
-            <Button
-              className="flex-1 bg-transparent"
-              variant="outline"
-              onClick={handleResign}
-              disabled={gameState !== "playing"}
-            >
-              <Flag className="w-4 h-4 mr-2" /> Resign
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  className="flex-1 bg-transparent"
+                  variant="outline"
+                  disabled={gameState !== "playing"}
+                >
+                  <Flag className="w-4 h-4 mr-2" /> Resign
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Resign Game?</AlertDialogTitle>
+                  <AlertDialogDescription>This will count as a loss. Are you sure?</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleResign}>Resign</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <Button
               className="flex-1 bg-transparent"
               variant="outline"

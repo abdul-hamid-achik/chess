@@ -146,7 +146,7 @@ function evaluateBoard(game: Chess): number {
  */
 function minimax(game: Chess, depth: number, alpha: number, beta: number, isMaximizingPlayer: boolean): number {
   if (depth === 0 || game.isGameOver()) {
-    return -evaluateBoard(game)
+    return evaluateBoard(game)
   }
 
   const moves = game.moves()
@@ -194,20 +194,21 @@ export function getBestMove(game: Chess, difficulty: Difficulty): string | null 
   // Set search depth based on difficulty
   const depth = difficulty === "Intermediate" ? 1 : difficulty === "Advanced" ? 2 : 3
 
+  const isWhite = game.turn() === "w"
   let bestMove = null
-  let minEval = Number.POSITIVE_INFINITY
+  let bestEval = isWhite ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY
 
   // Shuffle moves for variety when evaluations are equal
   const shuffledMoves = moves.sort(() => Math.random() - 0.5)
 
   for (const move of shuffledMoves) {
     game.move(move)
-    // Bot is Black, so we want to minimize the evaluation
-    const boardValue = minimax(game, depth - 1, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY, true)
+    // After bot's move, opponent plays next: White maximizes, Black minimizes
+    const boardValue = minimax(game, depth - 1, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY, !isWhite)
     game.undo()
 
-    if (boardValue < minEval) {
-      minEval = boardValue
+    if (isWhite ? boardValue > bestEval : boardValue < bestEval) {
+      bestEval = boardValue
       bestMove = move
     }
   }

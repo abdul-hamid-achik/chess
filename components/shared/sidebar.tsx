@@ -1,8 +1,8 @@
 import type React from "react"
-import Link from "next/link"
 import { Home, Puzzle, GraduationCap, User, BarChart3, LogIn, UserPlus, Users, Trophy } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { auth } from "@/lib/auth/config"
+import { NavLink } from "./nav-links"
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> { }
 
@@ -20,68 +20,23 @@ export async function Sidebar({ className }: SidebarProps) {
             <h2 className="text-xl font-bold tracking-tight">Chess</h2>
           </div>
           <div className="space-y-1">
-            <Link href="/play">
-              <button className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors justify-start">
-                <Home className="h-5 w-5" />
-                Play
-              </button>
-            </Link>
-            <Link href="/play-pvp">
-              <button className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors justify-start">
-                <Users className="h-5 w-5" />
-                Play Online
-              </button>
-            </Link>
-            <Link href="/puzzles">
-              <button className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors justify-start">
-                <Puzzle className="h-5 w-5" />
-                Puzzles
-              </button>
-            </Link>
-            <Link href="/learn">
-              <button className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors justify-start">
-                <GraduationCap className="h-5 w-5" />
-                Learn
-              </button>
-            </Link>
-            <Link href="/analysis">
-              <button className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors justify-start">
-                <BarChart3 className="h-5 w-5" />
-                Analysis
-              </button>
-            </Link>
-            <Link href="/leaderboard">
-              <button className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors justify-start">
-                <Trophy className="h-5 w-5" />
-                Leaderboard
-              </button>
-            </Link>
+            <NavLink href="/play" label="Play" icon={Home} />
+            <NavLink href="/play-pvp" label="Play Online" icon={Users} />
+            <NavLink href="/puzzles" label="Puzzles" icon={Puzzle} />
+            <NavLink href="/learn" label="Learn" icon={GraduationCap} />
+            <NavLink href="/analysis" label="Analysis" icon={BarChart3} />
+            <NavLink href="/leaderboard" label="Leaderboard" icon={Trophy} />
           </div>
         </div>
       </div>
 
       <div className="px-3 py-2 space-y-1">
         {session ? (
-          <Link href="/profile">
-            <button className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors justify-start">
-              <User className="h-5 w-5" />
-              Profile
-            </button>
-          </Link>
+          <NavLink href="/profile" label="Profile" icon={User} />
         ) : (
           <>
-            <Link href="/sign-in">
-              <button className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors justify-start">
-                <LogIn className="h-5 w-5" />
-                Sign In
-              </button>
-            </Link>
-            <Link href="/sign-up">
-              <button className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors justify-start">
-                <UserPlus className="h-5 w-5" />
-                Sign Up
-              </button>
-            </Link>
+            <NavLink href="/sign-in" label="Sign In" icon={LogIn} />
+            <NavLink href="/sign-up" label="Sign Up" icon={UserPlus} />
           </>
         )}
       </div>

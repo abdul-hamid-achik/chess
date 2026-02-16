@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { BookmarkPlus, BookmarkCheck, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react"
 import { ChessBoard } from "@/components/features/game/chess-board"
 import { Chess } from "chess.js"
-import { addToRepertoire, removeFromRepertoire, updateOpeningNotes, isInRepertoire } from "@/lib/actions/openings"
+import { addToRepertoire, removeFromRepertoire, isInRepertoire } from "@/lib/actions/openings"
 import { toast } from "sonner"
 
 interface Opening {
@@ -28,7 +28,7 @@ interface Opening {
 interface OpeningDetailProps {
   opening: Opening | null
   open: boolean
-  onOpenChange: (open: boolean) => void
+  onOpenChange: (_open: boolean) => void
   onRepertoireChange?: () => void
 }
 
@@ -129,7 +129,7 @@ export function OpeningDetail({ opening, open, onOpenChange, onRepertoireChange 
         await checkRepertoire()
         onRepertoireChange?.()
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to add to repertoire")
     } finally {
       setSaving(false)
@@ -153,7 +153,7 @@ export function OpeningDetail({ opening, open, onOpenChange, onRepertoireChange 
         await checkRepertoire()
         onRepertoireChange?.()
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to remove from repertoire")
     } finally {
       setSaving(false)
@@ -185,7 +185,6 @@ export function OpeningDetail({ opening, open, onOpenChange, onRepertoireChange 
             <Card>
               <CardContent className="p-4">
                 <ChessBoard
-                  game={game}
                   fen={game.fen()}
                   onMove={() => false}
                   boardOrientation="white"

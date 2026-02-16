@@ -26,7 +26,7 @@ export function GameList({ games }: GameListProps) {
           win: { variant: "default" as const, text: "Won", class: "bg-green-600 hover:bg-green-700" },
           loss: { variant: "destructive" as const, text: "Lost", class: "" },
           draw: { variant: "secondary" as const, text: "Draw", class: "" },
-        }[game.result]
+        }[game.result] ?? { variant: "secondary" as const, text: game.result, class: "" }
 
         return (
           <Link key={game.id} href={`/games/${game.id}`}>

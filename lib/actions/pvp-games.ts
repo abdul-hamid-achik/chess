@@ -7,6 +7,12 @@ import { eq } from "drizzle-orm"
 import { Chess } from "chess.js"
 import { publishToChannel } from "@/lib/ably/server"
 import { calculateBothRatings } from "@/lib/utils/elo"
+import { z } from "zod"
+
+const makeMoveSchema = z.object({
+  gameId: z.string().uuid(),
+  move: z.string().min(2).max(10),
+})
 
 export async function getGame(gameId: string) {
   const session = await auth()
@@ -41,6 +47,11 @@ export async function getGame(gameId: string) {
 }
 
 export async function makeMove(gameId: string, move: string) {
+  const parsed = makeMoveSchema.safeParse({ gameId, move })
+  if (!parsed.success) {
+    return { error: "Invalid move data" }
+  }
+
   const session = await auth()
   if (!session?.user?.id) {
     return { error: "Unauthorized" }
@@ -79,7 +90,7 @@ export async function makeMove(gameId: string, move: string) {
 
     // Check for timeout
     if (newWhiteTime <= 0 || newBlackTime <= 0) {
-      const winner = newWhiteTime <= 0 ? "black" : "white"
+      const _winner = newWhiteTime <= 0 ? "black" : "white"
       await timeoutGameInternal(gameId, newWhiteTime <= 0 ? "white" : "black")
       return { error: "Time expired" }
     }
@@ -130,6 +141,17 @@ export async function makeMove(gameId: string, move: string) {
 export async function timeoutGame(gameId: string, loser: "white" | "black") {
   const session = await auth()
   if (!session?.user?.id) {
+    return { error: "Unauthorized" }
+  }
+
+  // Verify caller is a player in this game
+  const game = await db.query.pvpGames.findFirst({
+    where: eq(pvpGames.id, gameId),
+  })
+
+  if (!game) return { error: "Game not found" }
+
+  if (game.whitePlayerId !== session.user.id && game.blackPlayerId !== session.user.id) {
     return { error: "Unauthorized" }
   }
 
@@ -252,7 +274,7 @@ async function endGame(gameId: string, chess: Chess) {
 
   // Update ELO ratings
   if (result !== "draw") {
-    await updateRatings(game.whitePlayerId, game.blackPlayerId, result)
+    await updateRatings(game.whitePlayerId, game.blackPlayerId, result as "white" | "black")
   } else {
     await updateRatings(game.whitePlayerId, game.blackPlayerId, "draw")
   }
@@ -402,41 +424,42 @@ async function updateRatings(
   result: "white" | "black" | "draw"
 ) {
   try {
-    // Fetch both players' current ratings
-    const whitePlayer = await db.query.users.findFirst({
-      where: eq(users.id, whitePlayerId),
+    await db.transaction(async (tx) => {
+      // Fetch both players' current ratings
+      const whitePlayer = await tx.query.users.findFirst({
+        where: eq(users.id, whitePlayerId),
+      })
+      const blackPlayer = await tx.query.users.findFirst({
+        where: eq(users.id, blackPlayerId),
+      })
+
+      if (!whitePlayer || !blackPlayer) {
+        throw new Error("Failed to fetch players for rating update")
+      }
+
+      // Calculate new ratings using ELO formula
+      const ratingChanges = calculateBothRatings(
+        whitePlayer.rating,
+        blackPlayer.rating,
+        result
+      )
+
+      // Update both players' ratings in the database
+      await Promise.all([
+        tx
+          .update(users)
+          .set({ rating: ratingChanges.whiteNewRating })
+          .where(eq(users.id, whitePlayerId)),
+        tx
+          .update(users)
+          .set({ rating: ratingChanges.blackNewRating })
+          .where(eq(users.id, blackPlayerId)),
+      ])
+
+      console.log(
+        `Rating update: White ${whitePlayer.rating} -> ${ratingChanges.whiteNewRating} (${ratingChanges.whiteChange >= 0 ? "+" : ""}${ratingChanges.whiteChange}), Black ${blackPlayer.rating} -> ${ratingChanges.blackNewRating} (${ratingChanges.blackChange >= 0 ? "+" : ""}${ratingChanges.blackChange})`
+      )
     })
-    const blackPlayer = await db.query.users.findFirst({
-      where: eq(users.id, blackPlayerId),
-    })
-
-    if (!whitePlayer || !blackPlayer) {
-      console.error("Failed to fetch players for rating update")
-      return
-    }
-
-    // Calculate new ratings using ELO formula
-    const ratingChanges = calculateBothRatings(
-      whitePlayer.rating,
-      blackPlayer.rating,
-      result
-    )
-
-    // Update both players' ratings in the database
-    await Promise.all([
-      db
-        .update(users)
-        .set({ rating: ratingChanges.whiteNewRating })
-        .where(eq(users.id, whitePlayerId)),
-      db
-        .update(users)
-        .set({ rating: ratingChanges.blackNewRating })
-        .where(eq(users.id, blackPlayerId)),
-    ])
-
-    console.log(
-      `Rating update: White ${whitePlayer.rating} -> ${ratingChanges.whiteNewRating} (${ratingChanges.whiteChange >= 0 ? "+" : ""}${ratingChanges.whiteChange}), Black ${blackPlayer.rating} -> ${ratingChanges.blackNewRating} (${ratingChanges.blackChange >= 0 ? "+" : ""}${ratingChanges.blackChange})`
-    )
   } catch (error) {
     console.error("Error updating ratings:", error)
   }

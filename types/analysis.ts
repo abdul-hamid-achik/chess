@@ -134,7 +134,7 @@ export const EVALUATION_THRESHOLDS = {
   GREAT: 10, // Within 0.1 pawns of best
   GOOD: 50, // Within 0.5 pawns of best
   INACCURACY: 100, // 0.5-1.0 pawns worse
-  MISTAKE: 200, // 1.0-2.0 pawns worse
+  MISTAKE: 100, // 1.0-2.0 pawns worse
   BLUNDER: 200, // 2.0+ pawns worse
 } as const
 

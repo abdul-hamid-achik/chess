@@ -14,8 +14,8 @@ export async function GET() {
     const tokenRequest = await ably.auth.createTokenRequest({
       clientId: session.user.id,
       capability: {
-        "game:*": ["subscribe", "publish", "presence"],
-        "matchmaking:*": ["subscribe", "publish"],
+        "game:*": ["subscribe", "presence"],
+        "matchmaking:*": ["subscribe"],
       },
     })
 

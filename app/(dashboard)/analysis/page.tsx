@@ -13,7 +13,7 @@ export default function AnalysisPage() {
   const [analyzedGames, setAnalyzedGames] = useState<GameWithAnalysis[]>([])
   const [unanalyzedGames, setUnanalyzedGames] = useState<GameWithAnalysis[]>([])
   const [loading, setLoading] = useState(true)
-  const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [refreshTrigger, _setRefreshTrigger] = useState(0)
 
   useEffect(() => {
     loadGames()
@@ -44,10 +44,6 @@ export default function AnalysisPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleGameAnalyzed = () => {
-    setRefreshTrigger((prev) => prev + 1)
   }
 
   return (
@@ -102,7 +98,7 @@ export default function AnalysisPage() {
             <GameListForAnalysis
               games={allGames}
               loading={loading}
-              onGameAnalyzed={handleGameAnalyzed}
+
             />
           </TabsContent>
 
@@ -121,7 +117,7 @@ export default function AnalysisPage() {
               <GameListForAnalysis
                 games={unanalyzedGames}
                 loading={loading}
-                onGameAnalyzed={handleGameAnalyzed}
+  
               />
             )}
           </TabsContent>
@@ -141,7 +137,7 @@ export default function AnalysisPage() {
               <GameListForAnalysis
                 games={analyzedGames}
                 loading={loading}
-                onGameAnalyzed={handleGameAnalyzed}
+  
               />
             )}
           </TabsContent>

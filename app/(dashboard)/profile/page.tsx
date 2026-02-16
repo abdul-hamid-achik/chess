@@ -1,6 +1,5 @@
 import { auth } from "@/lib/auth/config"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { User, Trophy, Target, TrendingUp } from "lucide-react"
 import { redirect } from "next/navigation"
 import { getUserGames, getUserStats } from "@/lib/actions/games"

@@ -8,6 +8,7 @@ import {
   primaryKey,
   json,
   index,
+  uniqueIndex,
   real,
 } from "drizzle-orm/pg-core"
 import type { AdapterAccount } from "next-auth/adapters"
@@ -122,6 +123,7 @@ export const userPuzzles = pgTable("user_puzzle", {
 }, (table) => [
   index("user_puzzle_user_idx").on(table.userId),
   index("user_puzzle_puzzle_idx").on(table.puzzleId),
+  uniqueIndex("user_puzzle_unique_idx").on(table.userId, table.puzzleId),
 ])
 
 // Opening repertoire tables
@@ -164,6 +166,7 @@ export const userOpenings = pgTable("user_opening", {
 }, (table) => [
   index("user_opening_user_idx").on(table.userId),
   index("user_opening_opening_idx").on(table.openingId),
+  uniqueIndex("user_opening_unique_idx").on(table.userId, table.openingId, table.color),
 ])
 
 // Game analysis tables
@@ -235,6 +238,7 @@ export const matchmakingQueue = pgTable("matchmaking_queue", {
   index("queue_time_control_idx").on(table.timeControl),
   index("queue_rating_idx").on(table.rating),
   index("queue_user_idx").on(table.userId),
+  uniqueIndex("queue_user_unique_idx").on(table.userId),
 ])
 
 // Type exports for use in application

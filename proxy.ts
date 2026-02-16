@@ -11,7 +11,9 @@ export default auth((req) => {
     nextUrl.pathname.startsWith("/puzzles") ||
     nextUrl.pathname.startsWith("/learn") ||
     nextUrl.pathname.startsWith("/profile") ||
-    nextUrl.pathname.startsWith("/analysis")
+    nextUrl.pathname.startsWith("/analysis") ||
+    nextUrl.pathname.startsWith("/leaderboard") ||
+    nextUrl.pathname.startsWith("/games")
 
   if (isAuthPage) {
     if (isLoggedIn) {

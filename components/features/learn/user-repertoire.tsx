@@ -41,7 +41,7 @@ interface UserOpening {
 }
 
 interface UserRepertoireProps {
-  onOpeningClick?: (opening: UserOpening["opening"]) => void
+  onOpeningClick?: (_opening: UserOpening["opening"]) => void
   refreshTrigger?: number
 }
 
@@ -66,8 +66,8 @@ export function UserRepertoire({ onOpeningClick, refreshTrigger }: UserRepertoir
       if (result.success && result.openings) {
         setOpenings(result.openings)
       }
-    } catch (error) {
-      console.error("Error loading repertoire:", error)
+    } catch (_error) {
+      console.error("Error loading repertoire:", _error)
     } finally {
       setLoading(false)
     }
@@ -89,7 +89,7 @@ export function UserRepertoire({ onOpeningClick, refreshTrigger }: UserRepertoir
         await loadRepertoire()
         setEditingId(null)
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to update notes")
     } finally {
       setSaving(false)
@@ -118,7 +118,7 @@ export function UserRepertoire({ onOpeningClick, refreshTrigger }: UserRepertoir
         toast.success("Removed from repertoire")
         await loadRepertoire()
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to remove opening")
     } finally {
       setRemoving(null)

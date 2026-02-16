@@ -41,12 +41,12 @@ async function runAllSeeds() {
   console.log("🌱 Starting database seeding...")
   console.log("=" .repeat(50))
 
-  const results: Record<string, any> = {}
+  const results: Record<string, { count?: number; skipped?: boolean }> = {}
 
   for (const seedName of Object.keys(seeds) as SeedName[]) {
     try {
       results[seedName] = await runSeed(seedName)
-    } catch (error) {
+    } catch (_error) {
       console.error(`Failed to run ${seedName} seed`)
       // Continue with other seeds
     }

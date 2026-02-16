@@ -44,7 +44,7 @@ export function EvaluationGraph({ moves }: EvaluationGraphProps) {
   // Custom dot to highlight mistakes and blunders
   const CustomDot = (props: { cx?: number; cy?: number; payload?: { classification: string } }) => {
     const { cx, cy, payload } = props
-    const classification = payload.classification
+    const classification = payload?.classification
 
     if (classification === "blunder") {
       return (

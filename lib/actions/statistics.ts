@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth/config"
 import { db } from "@/lib/db"
 import { games, userPuzzles, users } from "@/lib/db/schema"
 import { eq, and, gte, sql } from "drizzle-orm"
-import { startOfDay, subDays, format, startOfWeek, startOfMonth } from "date-fns"
+import { subDays, format, startOfWeek, startOfMonth } from "date-fns"
 
 /**
  * Get rating history over time

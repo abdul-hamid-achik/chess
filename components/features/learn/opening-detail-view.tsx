@@ -148,7 +148,7 @@ export function OpeningDetailView({ opening, userId, inRepertoire: initialRepert
         }))
         await loadUserNotes()
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to add to repertoire")
     } finally {
       setSaving(false)
@@ -173,7 +173,7 @@ export function OpeningDetailView({ opening, userId, inRepertoire: initialRepert
           [selectedColor === "w" ? "whiteId" : "blackId"]: undefined,
         }))
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to remove from repertoire")
     } finally {
       setSaving(false)
@@ -197,7 +197,7 @@ export function OpeningDetailView({ opening, userId, inRepertoire: initialRepert
           [selectedColor === "w" ? "white" : "black"]: notes,
         }))
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to update notes")
     } finally {
       setSaving(false)

@@ -6,6 +6,18 @@ import { Chessboard } from "react-chessboard"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Flag, WifiOff } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { formatTime } from "@/lib/utils/format-time"
 import { makeMove, resignGame, timeoutGame, offerDraw, acceptDraw, declineDraw } from "@/lib/actions/pvp-games"
 import { getAblyClient } from "@/lib/ably/client"
 import { toast } from "sonner"
@@ -84,6 +96,7 @@ export function PvPGame({ game, opponent, userId }: PvPGameProps) {
       toast.error("Connection failed")
     })
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleMessage = (message: any) => {
       switch (message.name) {
         case "move":
@@ -200,12 +213,6 @@ export function PvPGame({ game, opponent, userId }: PvPGameProps) {
     }
   }
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, "0")}`
-  }
-
   return (
     <div className="flex flex-col lg:flex-row gap-8 items-start justify-center max-w-6xl mx-auto">
       {connectionState === "disconnected" && (
@@ -226,8 +233,10 @@ export function PvPGame({ game, opponent, userId }: PvPGameProps) {
             <Chessboard
               options={{
                 position: fen,
-                onPieceDrop: ({ sourceSquare, targetSquare }) =>
-                  onPieceDrop(sourceSquare, targetSquare || ""),
+                onPieceDrop: ({ sourceSquare, targetSquare }) => {
+                  onPieceDrop(sourceSquare, targetSquare || "")
+                  return true
+                },
                 boardOrientation: isWhite ? "white" : "black",
                 allowDragging: gameStatus === "active",
               }}
@@ -305,10 +314,24 @@ export function PvPGame({ game, opponent, userId }: PvPGameProps) {
                   </Button>
                 )}
 
-                <Button onClick={handleResign} variant="destructive" className="w-full">
-                  <Flag className="w-4 h-4 mr-2" />
-                  Resign
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="w-full">
+                      <Flag className="w-4 h-4 mr-2" />
+                      Resign
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Resign Game?</AlertDialogTitle>
+                      <AlertDialogDescription>This will count as a loss. Are you sure?</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleResign}>Resign</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             )}
 

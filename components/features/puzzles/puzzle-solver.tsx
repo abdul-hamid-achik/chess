@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Chess } from "chess.js"
 import { Chessboard } from "react-chessboard"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -17,7 +17,7 @@ interface PuzzleSolverProps {
 }
 
 export function PuzzleSolver({ puzzle, onPuzzleComplete }: PuzzleSolverProps) {
-  const [game, setGame] = useState(new Chess(puzzle.fen))
+  const gameRef = useRef(new Chess(puzzle.fen))
   const [fen, setFen] = useState(puzzle.fen)
   const [userMoves, setUserMoves] = useState<string[]>([])
   const [solutionMoves] = useState<string[]>(puzzle.moves as string[])
@@ -33,7 +33,7 @@ export function PuzzleSolver({ puzzle, onPuzzleComplete }: PuzzleSolverProps) {
 
   useEffect(() => {
     // Reset when puzzle changes
-    setGame(new Chess(puzzle.fen))
+    gameRef.current = new Chess(puzzle.fen)
     setFen(puzzle.fen)
     setUserMoves([])
     setPuzzleState("playing")
@@ -46,7 +46,7 @@ export function PuzzleSolver({ puzzle, onPuzzleComplete }: PuzzleSolverProps) {
     if (puzzleState !== "playing") return false
     if (!targetSquare) return false
 
-    const gameCopy = new Chess(game.fen())
+    const gameCopy = new Chess(gameRef.current.fen())
 
     try {
       // Try to make the move
@@ -68,7 +68,7 @@ export function PuzzleSolver({ puzzle, onPuzzleComplete }: PuzzleSolverProps) {
         // Correct move!
         const newUserMoves = [...userMoves, move.san]
         setUserMoves(newUserMoves)
-        setGame(gameCopy)
+        gameRef.current = gameCopy
         setFen(gameCopy.fen())
 
         // Reset hint for the next move
@@ -111,7 +111,7 @@ export function PuzzleSolver({ puzzle, onPuzzleComplete }: PuzzleSolverProps) {
 
     try {
       currentGame.move(opponentMove)
-      setGame(new Chess(currentGame.fen()))
+      gameRef.current = new Chess(currentGame.fen())
       setFen(currentGame.fen())
     } catch {
       // Silent fail
@@ -140,7 +140,7 @@ export function PuzzleSolver({ puzzle, onPuzzleComplete }: PuzzleSolverProps) {
 
   const handleReset = () => {
     const newGame = new Chess(puzzle.fen)
-    setGame(newGame)
+    gameRef.current = newGame
     setFen(newGame.fen())
     setUserMoves([])
     setPuzzleState("playing")

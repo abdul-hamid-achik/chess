@@ -128,7 +128,7 @@ export function EnhancedGameReplay({
     return `${sign}${pawns.toFixed(2)}`
   }
 
-  const getEvaluationColor = (evaluation: number) => {
+  const _getEvaluationColor = (evaluation: number) => {
     if (evaluation > 200) return "bg-green-500"
     if (evaluation > 50) return "bg-blue-500"
     if (evaluation > -50) return "bg-gray-500"
@@ -173,8 +173,8 @@ export function EnhancedGameReplay({
                 position: fen,
                 boardOrientation: playerColor === "w" ? "white" : "black",
                 allowDragging: false,
-                customDarkSquareStyle: { backgroundColor: "#b58863" },
-                customLightSquareStyle: { backgroundColor: "#f0d9b5" },
+                darkSquareStyle: { backgroundColor: "#b58863" },
+                lightSquareStyle: { backgroundColor: "#f0d9b5" },
               }}
             />
           </div>

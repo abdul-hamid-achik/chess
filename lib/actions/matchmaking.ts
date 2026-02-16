@@ -6,6 +6,11 @@ import { matchmakingQueue, users, pvpGames } from "@/lib/db/schema"
 import { eq, and, gte, lte, sql } from "drizzle-orm"
 import { Chess } from "chess.js"
 import { publishToChannel } from "@/lib/ably/server"
+import { z } from "zod"
+
+const joinQueueSchema = z.object({
+  timeControl: z.enum(["bullet", "blitz", "rapid"]),
+})
 
 const TIME_CONFIGS = {
   bullet: 60,
@@ -16,6 +21,11 @@ const TIME_CONFIGS = {
 const RATING_RANGE = 200
 
 export async function joinQueue(timeControl: keyof typeof TIME_CONFIGS) {
+  const parsed = joinQueueSchema.safeParse({ timeControl })
+  if (!parsed.success) {
+    return { error: "Invalid time control" }
+  }
+
   const session = await auth()
   if (!session?.user?.id) {
     return { error: "Unauthorized" }
@@ -89,15 +99,17 @@ async function findMatch(userId: string, userRating: number, timeControl: string
 
   const opponent = opponents[0]
 
-  // Create game
-  const game = await createPvPGame(userId, opponent.user.id, timeControl)
+  // Create game and remove both players from queue atomically
+  return await db.transaction(async (tx) => {
+    // Remove both from queue
+    await tx
+      .delete(matchmakingQueue)
+      .where(sql`${matchmakingQueue.userId} IN (${userId}, ${opponent.user.id})`)
 
-  // Remove both from queue
-  await db
-    .delete(matchmakingQueue)
-    .where(sql`${matchmakingQueue.userId} IN (${userId}, ${opponent.user.id})`)
-
-  return game
+    // Create game
+    const game = await createPvPGame(userId, opponent.user.id, timeControl)
+    return game
+  })
 }
 
 async function createPvPGame(userId1: string, userId2: string, timeControl: string) {
