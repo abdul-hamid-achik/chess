@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/shared/theme-provider"
 import { SessionProvider } from "@/components/shared/session-provider"
+import { Analytics } from "@vercel/analytics/react"
 import { Toaster } from "@/components/ui/sonner"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -30,6 +31,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             {children}
+            <Analytics />
             <Toaster />
           </ThemeProvider>
         </SessionProvider>
