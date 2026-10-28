@@ -172,9 +172,17 @@ export function OpeningBrowser({ onOpeningClick, userRepertoireIds = [] }: Openi
           <CardContent className="flex flex-col items-center justify-center h-64">
             <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-lg font-medium mb-2">No openings found</p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground mb-4">
               Try adjusting your search or filters
             </p>
+            <Button variant="outline" onClick={() => {
+              setSearch("")
+              setDifficultyFilter("all")
+              setThemeFilter([])
+              setColorFilter("all")
+            }}>
+              Clear Filters
+            </Button>
           </CardContent>
         </Card>
       ) : (

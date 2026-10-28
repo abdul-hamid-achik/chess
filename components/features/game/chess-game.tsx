@@ -5,7 +5,7 @@ import { Chess } from "chess.js"
 import { ChessBoard } from "./chess-board"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { RotateCcw, ChevronLeft, ChevronRight, Flag, Play } from "lucide-react"
+import { RotateCcw, ChevronLeft, ChevronRight, Flag, Play, Download, Volume2, VolumeX, Lightbulb } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +23,12 @@ import { saveGame } from "@/lib/actions/games"
 import { analyzeGame } from "@/lib/actions/analysis"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { 
+  playMoveSound, 
+  playCaptureSound, 
+  playCheckSound,
+  initAudio 
+} from "@/lib/utils/sounds"
 
 type GameState = "setup" | "playing" | "finished"
 type TimeControl = "bullet" | "blitz" | "rapid" | "classical"
@@ -54,8 +60,18 @@ export function ChessGame({ userRating = 1200 }: { userRating?: number }) {
   const [gameSaved, setGameSaved] = useState(false)
   const [savedGameId, setSavedGameId] = useState<string | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [currentMoveIndex, setCurrentMoveIndex] = useState(-1)
+  const [gameHistory, setGameHistory] = useState<string[]>([])
+  const [soundEnabled, setSoundEnabled] = useState(true)
+  const [showHint, setShowHint] = useState(false)
+  const [hintMove, setHintMove] = useState<string | null>(null)
 
   const router = useRouter()
+
+  // Initialize audio on mount
+  useEffect(() => {
+    initAudio()
+  }, [])
 
   const startGame = () => {
     const initialTime = TIME_CONTROLS[timeControl].time
@@ -201,6 +217,23 @@ export function ChessGame({ userRating = 1200 }: { userRating?: number }) {
         if (result) {
           setFen(game.fen())
           setMoveHistory(game.history())
+          setGameHistory((prev) => [...prev, game.fen()])
+          setCurrentMoveIndex(-1)
+
+          // Play sound
+          if (soundEnabled) {
+            if (result.captured) {
+              playCaptureSound()
+            } else if (game.isCheck()) {
+              playCheckSound()
+            } else {
+              playMoveSound()
+            }
+          }
+
+          // Clear hint on move
+          setShowHint(false)
+          setHintMove(null)
 
           // Update captured pieces
           if (result.captured) {
@@ -216,7 +249,7 @@ export function ChessGame({ userRating = 1200 }: { userRating?: number }) {
       }
       return false
     },
-    [playerColor],
+    [playerColor, soundEnabled],
   )
 
   // Bot move
@@ -226,20 +259,38 @@ export function ChessGame({ userRating = 1200 }: { userRating?: number }) {
       const timeout = setTimeout(() => {
         const bestMove = getBestMove(game, difficulty)
         if (bestMove) {
-          game.move(bestMove)
+          const result = game.move(bestMove)
           setFen(game.fen())
           setMoveHistory(game.history())
+          setGameHistory((prev) => [...prev, game.fen()])
+          setCurrentMoveIndex(-1)
+
+          if (soundEnabled) {
+            if (result?.captured) {
+              playCaptureSound()
+            } else if (game.isCheck()) {
+              playCheckSound()
+            } else {
+              playMoveSound()
+            }
+          }
+
+          // Clear hint on move
+          setShowHint(false)
+          setHintMove(null)
         }
       }, 500)
       return () => clearTimeout(timeout)
     }
-  }, [fen, difficulty, gameState, playerColor])
+  }, [fen, difficulty, gameState, playerColor, soundEnabled, showHint, hintMove])
 
   const resetGame = () => {
     const newGame = new Chess()
     gameRef.current = newGame
     setFen(newGame.fen())
     setMoveHistory([])
+    setGameHistory([])
+    setCurrentMoveIndex(-1)
     setCaptured({ w: [], b: [] })
     setWinner(null)
     setGameOverReason("")
@@ -247,6 +298,57 @@ export function ChessGame({ userRating = 1200 }: { userRating?: number }) {
     setSavedGameId(null)
     setIsAnalyzing(false)
     setGameState("setup")
+  }
+
+  const goBack = () => {
+    if (gameHistory.length === 0) return
+    
+    if (currentMoveIndex === -1) {
+      setCurrentMoveIndex(gameHistory.length - 1)
+      setFen(gameRef.current.fen())
+    } else if (currentMoveIndex > 0) {
+      const newIndex = currentMoveIndex - 1
+      setCurrentMoveIndex(newIndex)
+      setFen(gameHistory[newIndex])
+    }
+  }
+
+  const goForward = () => {
+    if (gameHistory.length === 0 || currentMoveIndex === -1) return
+    
+    if (currentMoveIndex < gameHistory.length - 1) {
+      const newIndex = currentMoveIndex + 1
+      setCurrentMoveIndex(newIndex)
+      setFen(gameHistory[newIndex])
+    } else {
+      setCurrentMoveIndex(-1)
+      setFen(gameRef.current.fen())
+    }
+  }
+
+  const exportPGN = () => {
+    const pgn = gameRef.current.pgn()
+    const blob = new Blob([pgn], { type: "text/plain" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `chess-game-${new Date().toISOString().split("T")[0]}.pgn`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    toast.success("PGN exported!")
+  }
+
+  const showHintMove = () => {
+    if (gameState !== "playing") return
+    
+    const hint = getBestMove(gameRef.current, "Pro")
+    if (hint) {
+      setShowHint(true)
+      setHintMove(hint)
+      toast.info(`Hint: Try ${hint}`)
+    }
   }
 
   const handleAnalyzeGame = async () => {
@@ -510,11 +612,49 @@ export function ChessGame({ userRating = 1200 }: { userRating?: number }) {
           </div>
 
           <div className="flex justify-center gap-2 mt-4">
-            <Button variant="secondary" size="icon">
+            <Button 
+              variant="secondary" 
+              size="icon" 
+              onClick={goBack}
+              disabled={gameHistory.length === 0}
+              title="Previous move"
+            >
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <Button variant="secondary" size="icon">
+            <Button 
+              variant="secondary" 
+              size="icon" 
+              onClick={goForward}
+              disabled={gameHistory.length === 0 || currentMoveIndex === -1}
+              title="Next move"
+            >
               <ChevronRight className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={exportPGN}
+              disabled={moveHistory.length === 0}
+              title="Export PGN"
+            >
+              <Download className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={showHintMove}
+              disabled={gameState !== "playing" || gameRef.current.isGameOver()}
+              title="Show hint"
+            >
+              <Lightbulb className={`w-4 h-4 ${showHint ? "text-yellow-500 fill-yellow-500" : ""}`} />
+            </Button>
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              title={soundEnabled ? "Mute" : "Unmute"}
+            >
+              {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </Button>
           </div>
         </Card>

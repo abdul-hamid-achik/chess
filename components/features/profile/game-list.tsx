@@ -2,8 +2,10 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
+import { Gamepad2 } from "lucide-react"
 import type { Game } from "@/lib/db/schema"
 
 interface GameListProps {
@@ -13,9 +15,18 @@ interface GameListProps {
 export function GameList({ games }: GameListProps) {
   if (games.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground text-center py-8">
-        No games played yet. Start playing to see your game history here.
-      </p>
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+          <Gamepad2 className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <p className="text-lg font-medium mb-2">No games played yet</p>
+        <p className="text-sm text-muted-foreground mb-4">
+          Start playing to see your game history here
+        </p>
+        <Button asChild>
+          <Link href="/play">Play a Game</Link>
+        </Button>
+      </div>
     )
   }
 
